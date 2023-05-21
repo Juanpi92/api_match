@@ -21,7 +21,10 @@ export const User = mongoose.model(
       integer: true,
     },
     gender: String,
-    phone: String,
+    phone: {
+      type: String,
+      unique: true,
+    },
     email: {
       type: String,
       unique: true,

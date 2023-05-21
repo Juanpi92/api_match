@@ -12,6 +12,17 @@ export const authenticationRoutes = (app) => {
     //Check if the user is registered, and then make the login.
 
     //Create the code to confirm the validation of the SMS code(?).
+
+    //If the code is ok we proceed to auto login
+    let myuser = User.findOne({ phone: phone });
+    myuser = myuser.toJSON();
+    delete myuser.password;
+    let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
+      expiresIn: "2h",
+    });
+    //Sending the user and the token.
+    res.setHeader("auth-token", JSON.stringify(token));
+    res.status(201).send(myuser);
   });
 
   app.post("/register", async (req, res) => {
@@ -54,12 +65,19 @@ export const authenticationRoutes = (app) => {
       //Checking if the e-mail exist into the database or not.
       let exist_email = await User.findOne({ email: user.email });
       if (exist_email) {
-        return res.status(400).send({ error: "E-mail already registed" });
+        return res.status(400).send({ error: "E-mail already registered" });
+      }
+      //Checking if the e-mail exist into the database or not.
+      let exist_phone = await User.findOne({ phone: user.phone });
+      if (exist_phone) {
+        return res.status(400).send({ error: "Phone already registered" });
       }
       //Checking if the nickname exist into the database or not.
       let exist_nickName = await User.findOne({ nickName: user.nickName });
       if (exist_nickName) {
-        return res.status(400).send({ error: "This nickname is already in use" });
+        return res
+          .status(400)
+          .send({ error: "This nickname is already in use" });
       }
       let myuser = await User.create(user);
 
