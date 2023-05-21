@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "./infra/db.js";
 import cors from "cors";
+import { authenticationRoutes } from "./routes/authenticationRoutes.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -14,7 +15,7 @@ mongoose.set("strictQuery", false);
 connectDB();
 
 //Authentication routes
-authenticationRoutes();
+authenticationRoutes(app);
 
 app.get("/", async (req, res) => {
   res.status(200).send({ message: "Api is going" });
