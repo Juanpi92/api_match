@@ -36,7 +36,6 @@ export const authenticationRoutes = (app) => {
         password,
         Number(process.env.PASSOS)
       );
-      console.log("ok");
       let user = {
         name,
         lastName,
