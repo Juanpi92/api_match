@@ -57,19 +57,21 @@ export const authenticationRoutes = (app) => {
       if (exist_email) {
         return res.status(400).send({ error: "email already exist " });
       }
-
+      // Checking if the nickName exist into de database or not
       let exist_nickName = await User.findOne({ nickName: user.nickName });
       if (exist_nickName) {
         return res.status(400).send({ error: "nickName already exist " });
       }
       let myuser = await User.create(user);
-      //fazer login automatico
+
+      //Doing automatic login
       myuser = myuser.toJSON();
       delete myuser.password;
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
         expiresIn: "2h",
       });
-      //Envio a resposta
+
+      //Sending the user and the token
       res.setHeader("auth-token", JSON.stringify(token));
       res.status(201).send(myuser);
     } catch (error) {
