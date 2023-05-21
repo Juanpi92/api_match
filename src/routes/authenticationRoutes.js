@@ -3,18 +3,32 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 
 export const authenticationRoutes = (app) => {
+  app.post("/sms", async (req, res) => {
+    let { phone } = req.body;
+    //Create the code to send the sms with the auth code
+  });
+  app.post("/confirm_code", async (req, res) => {
+    let { phone, sms_code } = req.body;
+    //Conferir se o usuario ta cadastrado e entao fazer o login
+
+    //Create the code confirm the validation of the sms code
+  });
+
   app.post("/register", async (req, res) => {
     try {
       let {
         name,
         lastName,
         nickName,
+        about,
+        location,
+        preference,
         age,
         gender,
-        celphone,
-        photo,
-        user_class,
+        phone,
         email,
+        photos,
+        course,
         password,
       } = req.body;
       //Here we encripted the password
@@ -26,12 +40,15 @@ export const authenticationRoutes = (app) => {
         name,
         lastName,
         nickName,
+        about,
+        location,
+        preference,
         age,
         gender,
-        celphone,
-        photo,
-        user_class,
+        phone,
         email,
+        photos,
+        course,
         password: hashed_password,
       };
       // Checking if the email exist into de database or not
@@ -44,15 +61,16 @@ export const authenticationRoutes = (app) => {
       if (exist_nickName) {
         return res.status(400).send({ error: "nickName already exist " });
       }
-
-      await User.create(user);
-      res.status(201).send({ message: "Usuario registrado exitosamente" });
+      let myuser = await User.create(user);
+      //res.status(201).send({ message: "User Registered Successfully " });
+      res.status(201).send(myuser);
+      //fazer login automatico
     } catch (error) {
       res.status(500).send({ error: "Cant access to the database" });
     }
   });
 
-  //login
+  /*
   app.get("/login", async (req, res) => {
     try {
       let { email, password } = req.body;
@@ -81,5 +99,5 @@ export const authenticationRoutes = (app) => {
       console.log(error);
       res.status(500).send({ error: "Cant access to the database" });
     }
-  });
+  });*/
 };

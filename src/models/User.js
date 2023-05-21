@@ -8,18 +8,31 @@ export const User = mongoose.model(
       type: String,
       unique: true,
     },
+    about: String,
+    location: String,
+    preference: {
+      type: Array,
+      items: {
+        type: String,
+      },
+    },
     age: {
       type: Number,
       integer: true,
     },
     gender: String,
-    celphone: String,
+    phone: String,
     email: {
       type: String,
       unique: true,
     },
-    photo: String,
-    class: String,
+    photos: {
+      type: Array,
+      items: {
+        type: String,
+      },
+    },
+    course: String,
     password: String,
   },
   "Users"
