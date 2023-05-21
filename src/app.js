@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import { connectDB } from "./infra/db.js";
 import cors from "cors";
 
@@ -7,6 +8,7 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
+mongoose.set("strictQuery", false);
 
 //Connecting to db
 connectDB();
