@@ -5,9 +5,9 @@ export const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("Successful connection with the database");
+    console.log("Successful connection with the database!");
   } catch (error) {
-    console.error("Failed connection with the database:", error.message);
+    console.error("Failed to connect with the database:", error.message);
     process.exit(1); // Exit the application if it cannot connect to the database
   }
 };

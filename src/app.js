@@ -11,16 +11,16 @@ const app = express();
 app.use(express.json());
 mongoose.set("strictQuery", false);
 
-//Connecting to db
+//Connecting to the database.
 connectDB();
 
-//Authentication routes
+//Authentication routes.
 authenticationRoutes(app);
 
 app.get("/", async (req, res) => {
-  res.status(200).send({ message: "Api is going" });
+  res.status(200).send({ message: "API is ready to go!" });
 });
 
 app.listen(PORT, () => {
-  console.log(`API ready to use in http://localhost:${PORT}`);
+  console.log(`API ready to use in -> http://localhost:${PORT}`);
 });
