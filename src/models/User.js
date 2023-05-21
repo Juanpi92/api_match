@@ -4,6 +4,10 @@ export const User = mongoose.model(
   {
     name: String,
     lastName: String,
+    nickName: {
+      type: String,
+      unique: true,
+    },
     age: {
       type: Number,
       integer: true,
@@ -16,6 +20,7 @@ export const User = mongoose.model(
     },
     photo: String,
     class: String,
+    password: String,
   },
   "Users"
 );
