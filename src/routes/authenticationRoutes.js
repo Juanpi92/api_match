@@ -66,6 +66,7 @@ export const authenticationRoutes = (app) => {
       //Doing automatic login
       myuser = myuser.toJSON();
       delete myuser.password;
+      delete myuser.__v;
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
         expiresIn: "2h",
       });
