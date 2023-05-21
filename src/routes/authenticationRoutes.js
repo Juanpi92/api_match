@@ -5,13 +5,13 @@ import { User } from "../models/User.js";
 export const authenticationRoutes = (app) => {
   app.post("/sms", async (req, res) => {
     let { phone } = req.body;
-    //Create the code to send the sms with the auth code
+    //Create the code to send a SMS with the auth code.
   });
   app.post("/confirm_code", async (req, res) => {
     let { phone, sms_code } = req.body;
-    //Conferir se o usuario ta cadastrado e entao fazer o login
+    //Check if the user is registered, and then make the login.
 
-    //Create the code confirm the validation of the sms code
+    //Create the code to confirm the validation of the SMS code(?).
   });
 
   app.post("/register", async (req, res) => {
@@ -31,7 +31,7 @@ export const authenticationRoutes = (app) => {
         course,
         password,
       } = req.body;
-      //Here we encripted the password
+      //Here we encripted the password.
       let hashed_password = await bcrypt.hash(
         password,
         Number(process.env.PASSOS)
@@ -51,19 +51,19 @@ export const authenticationRoutes = (app) => {
         course,
         password: hashed_password,
       };
-      // Checking if the email exist into de database or not
+      //Checking if the e-mail exist into the database or not.
       let exist_email = await User.findOne({ email: user.email });
       if (exist_email) {
-        return res.status(400).send({ error: "email already exist " });
+        return res.status(400).send({ error: "E-mail already registed" });
       }
-      // Checking if the nickName exist into de database or not
+      //Checking if the nickname exist into the database or not.
       let exist_nickName = await User.findOne({ nickName: user.nickName });
       if (exist_nickName) {
-        return res.status(400).send({ error: "nickName already exist " });
+        return res.status(400).send({ error: "This nickname is already in use" });
       }
       let myuser = await User.create(user);
 
-      //Doing automatic login
+      //Doing the automatic login.
       myuser = myuser.toJSON();
       delete myuser.password;
       delete myuser.__v;
@@ -71,11 +71,11 @@ export const authenticationRoutes = (app) => {
         expiresIn: "2h",
       });
 
-      //Sending the user and the token
+      //Sending the user and the token.
       res.setHeader("auth-token", JSON.stringify(token));
       res.status(201).send(myuser);
     } catch (error) {
-      res.status(500).send({ error: "Cant access to the database" });
+      res.status(500).send({ error: "Can't access the database!" });
     }
   });
 };
