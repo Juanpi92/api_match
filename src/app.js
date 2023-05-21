@@ -13,6 +13,9 @@ mongoose.set("strictQuery", false);
 //Connecting to db
 connectDB();
 
+//Authentication routes
+authenticationRoutes();
+
 app.get("/", async (req, res) => {
   res.status(200).send({ message: "Api is going" });
 });
