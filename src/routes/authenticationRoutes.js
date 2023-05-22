@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
+import { validate } from "../authorization/auth.js";
 
 export const authenticationRoutes = (app) => {
   app.post("/sms", async (req, res) => {
@@ -104,7 +105,6 @@ export const authenticationRoutes = (app) => {
       let password = user.password;
       const login_property = Object.keys(user)[0];
       let value = user[login_property];
-      console.log(login_property);
       //Tring the user in the database
       let existe = await User.findOne({
         $or: [{ email: value }, { phone: value }, { nickName: value }],
@@ -127,8 +127,10 @@ export const authenticationRoutes = (app) => {
       res.setHeader("auth-token", JSON.stringify(token));
       res.status(200).send(existe);
     } catch (error) {
-      console.log(error);
       res.status(500).send({ error: "Cant access to the database" });
     }
+  });
+  app.get("/test_session", validate, async (req, res) => {
+    res.status(200).send({ message: "Session dint expire" });
   });
 };
