@@ -6,10 +6,10 @@ import { validate } from "../authorization/auth.js";
 export const authenticationRoutes = (app) => {
   app.post("/sms", async (req, res) => {
     let { phone } = req.body;
-    //Create the code to send a SMS with the auth code.
+    //Create the code to send a SMS with the auth code and storage thesedata in a db.
   });
   app.post("/confirm_code", async (req, res) => {
-    let { phone, sms_code } = req.body;
+    let { phone, sms_code, timestamp } = req.body;
     //Check if the user is registered, and then make the login.
 
     //Create the code to confirm the validation of the SMS code(?).
