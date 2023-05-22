@@ -96,4 +96,39 @@ export const authenticationRoutes = (app) => {
       res.status(500).send({ error: "Can't access the database!" });
     }
   });
+
+  //login route
+  app.get("/login", async (req, res) => {
+    try {
+      let user = req.body;
+      let password = user.password;
+      const login_property = Object.keys(user)[0];
+      let value = user[login_property];
+      console.log(login_property);
+      //Tring the user in the database
+      let existe = await User.findOne({
+        $or: [{ email: value }, { phone: value }, { nickName: value }],
+      });
+      if (!existe) {
+        return res.status(400).send({ error: "User or password wrong" });
+      }
+      let valid = await bcrypt.compare(password, existe.password);
+      if (!valid) {
+        return res.status(400).send({ error: "User or password wrong " });
+      }
+      //Cast the moongose document into a plain javascript object
+      existe = existe.toJSON();
+      delete existe.password;
+      delete existe.__v;
+      let token = jwt.sign(existe, process.env.SECRET_TOKEN, {
+        expiresIn: "2h",
+      });
+      //Send the response
+      res.setHeader("auth-token", JSON.stringify(token));
+      res.status(200).send(existe);
+    } catch (error) {
+      console.log(error);
+      res.status(500).send({ error: "Cant access to the database" });
+    }
+  });
 };

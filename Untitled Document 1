@@ -1,0 +1,8 @@
+Ideias:
+1-Criar o OTP(Manual o mediante uma library como otpgeneratoor)
+*armazenar em uma database junto com o numero e o timestamp
+*Enviar o sms com o codigo
+Depois verificar se o codigo introducido e o numero coinciden e a diferencia do timestamp e a data atual e menos de 3 min
+
+2-Usar um servicio de terceros: D7+Twilio para OTP
+
