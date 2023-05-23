@@ -4,11 +4,18 @@ import mongoose from "mongoose";
 import { connectDB } from "./infra/db.js";
 import cors from "cors";
 import { authenticationRoutes } from "./routes/authenticationRoutes.js";
+import path from "path";
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"), { fallthrough: false })
+);
+
+app.use(cors());
 mongoose.set("strictQuery", false);
 
 //Connecting to the database.
