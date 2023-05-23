@@ -4,10 +4,6 @@ export const User = mongoose.model(
   {
     name: String,
     lastName: String,
-    nickName: {
-      type: String,
-      unique: true,
-    },
     about: String,
     location: String,
     preference: {

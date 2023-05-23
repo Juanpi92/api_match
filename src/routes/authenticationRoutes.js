@@ -5,8 +5,14 @@ import { validate } from "../authorization/auth.js";
 
 export const authenticationRoutes = (app) => {
   app.post("/sms", async (req, res) => {
-    let { phone } = req.body;
-    //Create the code to send a SMS with the auth code and storage thesedata in a db.
+    try {
+      let { phone } = req.body;
+      //Create the code to send a SMS with the auth code and storage thesedata in a db.
+
+      res.status(200).send({ message: "o cdigo foi enviado satifatoriamente" });
+    } catch (error) {
+      res.status(500).send({ message: "Ocurriu um error ao enviar o codigo" });
+    }
   });
   app.post("/confirm_code", async (req, res) => {
     let { phone, sms_code, timestamp } = req.body;
@@ -31,7 +37,6 @@ export const authenticationRoutes = (app) => {
       let {
         name,
         lastName,
-        nickName,
         about,
         location,
         preference,
@@ -51,7 +56,6 @@ export const authenticationRoutes = (app) => {
       let user = {
         name,
         lastName,
-        nickName,
         about,
         location,
         preference,
@@ -73,13 +77,7 @@ export const authenticationRoutes = (app) => {
       if (exist_phone) {
         return res.status(400).send({ error: "Phone already registered" });
       }
-      //Checking if the nickname exist into the database or not.
-      let exist_nickName = await User.findOne({ nickName: user.nickName });
-      if (exist_nickName) {
-        return res
-          .status(400)
-          .send({ error: "This nickname is already in use" });
-      }
+
       let myuser = await User.create(user);
 
       //Doing the automatic login.
@@ -107,7 +105,7 @@ export const authenticationRoutes = (app) => {
       let value = user[login_property];
       //Tring the user in the database
       let existe = await User.findOne({
-        $or: [{ email: value }, { phone: value }, { nickName: value }],
+        $or: [{ email: value }, { phone: value }],
       });
       if (!existe) {
         return res.status(400).send({ error: "User or password wrong" });

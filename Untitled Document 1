@@ -1,8 +1,19 @@
 Ideias:
-1-Criar o OTP(Manual o mediante uma library como otpgeneratoor)
-*armazenar em uma database junto com o numero e o timestamp
+ruta:/sms
+1-Criar o OTP(Manual o mediante uma library como otpgenerator)
+*armazenar em uma database o codigo junto com o numero e o timestamp-SQLite
 *Enviar o sms com o codigo
+
+alternativa:enviar com OTP
+
+ruta:/confirm_codigo
 Depois verificar se o codigo introducido e o numero coinciden e a diferencia do timestamp e a data atual e menos de 3 min
+Date.now()-Timestamp>360000
+
+alternativa:confirmar OTP
+
+se o codigo ta incorreto----->send(402) ta incoreto o codigo
+se o codigo ta correto e o usuario ja ta cadastrado---->send(200) {usuario,login:true} header(jwt)
+se o codigo ta correto e o usuario nao ta cadastrado---->send(200){login:false}
 
 2-Usar um servicio de terceros: D7+Twilio para OTP
-
