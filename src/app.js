@@ -18,6 +18,13 @@ app.use(
 app.use(cors());
 mongoose.set("strictQuery", false);
 
+app.use(    // Added to capture user email
+  express.urlencoded({
+    extended: true
+  })
+)
+
+
 //Connecting to the database.
 connectDB();
 

@@ -5,6 +5,11 @@ import { validate } from "../authorization/auth.js";
 import multer from "multer";
 import path from "path";
 
+import nodemailer from 'nodemailer'
+import { emailCliente } from '../views/email.js';
+import { armazenarCodigo, excluirCodigo, verificarCodigo } from '../controlers/codigosSqlite.js';
+
+
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "uploads/" });
 
@@ -207,4 +212,63 @@ export const authenticationRoutes = (app) => {
       res.status(500).send({ error: "Can't access the database!" });
     }
   });
+
+
+
+
+
+  // Email verification routes
+
+  app.post('/codigo_email', (req, res) => {   // Route responsible for receiving the customer's email and sending a code by email
+
+    const codigo = Math.floor(Math.random() * 9000) + 1000;   // 4 digit random code generator
+
+    armazenarCodigo(req.body.email, codigo)   // Function that saves the email and code in the database
+    excluirCodigo(req.body.email, codigo)   // Function that deletes the email and code stored by the above function from the database after 30 seconds
+
+    const transport = nodemailer.createTransport({
+      host: 'smtp.office365.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.SENHA
+      }
+    })
+
+    const mensagem =
+    {
+      from: process.env.EMAIL,
+      to: req.body.email,
+      subject: 'Código de verificação',
+      html: emailCliente(codigo),
+      text: `Código de verificação: ${codigo}`
+    }
+
+    transport.sendMail(mensagem)
+      .then((response) => {
+        return res.json({ message: "Enviamos um codigo de confirmacao para seu e-mail!" })
+      })
+      .catch((error) => {
+        return res.json({ message: "Digite um e-mail existente!" })
+      })
+
+  })
+
+
+  app.post('/verificar_codigo', (req, res) => {   // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
+
+    verificarCodigo(req.body.email, req.body.codigo)
+      .then((response) => {
+        if (!response) {
+          res.json({ message: "Código inválido ou expirado!" })
+        } else {
+          res.json({ message: "Código verificado com sucesso!" })
+        }
+      })
+      .catch((error) => console(error))
+
+  })
+
+
 };
