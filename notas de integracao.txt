@@ -73,3 +73,16 @@ Criado o arquivo 'email.js' que fica responsável por guardar o html a ser exibi
 
 ./src/views/database/database.db
 Criado arquivo responsável pelo banco de dados que vai armazenar temporariamente o código de verificação.
+
+
+
+
+
+
+
+
+
+O código traduzido para o inglês.
+
+
+The code translated into English.
