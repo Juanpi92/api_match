@@ -1,4 +1,4 @@
-export const emailCliente = (codigo) => {
+export const messageHTML = (code) => {
 
     return `
         <!DOCTYPE html>
@@ -9,7 +9,7 @@ export const emailCliente = (codigo) => {
             <title>Match up</title>
         </head>
         <body>
-            <h1>Código de verificação: ${codigo}</h1>
+            <h1>Código de verificação: ${code}</h1>
         </body>
         </html>
         `
