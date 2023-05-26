@@ -16,9 +16,9 @@ export const authenticationRoutes = (app) => {
       let { phone } = req.body;
       //Create the code to send a SMS with the auth code and storage thesedata in a db.
 
-      res.status(200).send({ message: "o cdigo foi enviado satifatoriamente" });
+      res.status(200).send({ message: "the code was sent successfully" });
     } catch (error) {
-      res.status(500).send({ message: "Ocurriu um error ao enviar o codigo" });
+      res.status(500).send({ message: "An error occurred while sending the code" });
     }
   });
   app.post("/confirm_code", async (req, res) => {
@@ -241,11 +241,11 @@ export const authenticationRoutes = (app) => {
       .sendMail(emailConfig)
       .then((response) =>
         res.status(200).send({
-          message: "Enviamos um codigo de confirmacao para seu e-mail!",
+          message: "We sent a confirmation code to your email!",
         })
       )
       .catch((error) =>
-        res.status(400).send({ message: "Digite um e-mail existente!" })
+        res.status(400).send({ message: "Enter an existing email!" })
       );
   });
 
@@ -256,7 +256,7 @@ export const authenticationRoutes = (app) => {
       if (!check) {
         return res
           .status(400)
-          .send({ message: "Código inválido ou expirado!" });
+          .send({ message: "Invalid or expired code!" });
       }
       let exist_email = await User.findOne({ email: req.body.email });
       if (!exist_email) {
