@@ -6,8 +6,8 @@ import multer from "multer";
 import path from "path";
 
 import nodemailer from 'nodemailer'
-import { emailCliente } from '../views/email.js';
-import { armazenarCodigo, excluirCodigo, verificarCodigo } from '../controlers/codigosSqlite.js';
+import { messageHTML } from '../views/email.js';
+import { saveCode, deleteCode, checkCode } from '../controlers/codeSqlite.js';
 
 
 export const authenticationRoutes = (app) => {
@@ -219,12 +219,12 @@ export const authenticationRoutes = (app) => {
 
   // Email verification routes
 
-  app.post('/codigo_email', (req, res) => {   // Route responsible for receiving the customer's email and sending a code by email
+  app.post('/code_email', (req, res) => {   // Route responsible for receiving the customer's email and sending a code by email
 
-    const codigo = Math.floor(Math.random() * 9000) + 1000;   // 4 digit random code generator
+    const code = Math.floor(Math.random() * 9000) + 1000;   // 4 digit random code generator
 
-    armazenarCodigo(req.body.email, codigo)   // Function that saves the email and code in the database
-    excluirCodigo(req.body.email, codigo)   // Function that deletes the email and code stored by the above function from the database after 30 seconds
+    saveCode(req.body.email, code)   // Function that saves the email and code in the database
+    deleteCode(req.body.email, code)   // Function that deletes the email and code stored by the above function from the database after 30 seconds
 
     const transport = nodemailer.createTransport({
       host: 'smtp.office365.com',
@@ -232,38 +232,34 @@ export const authenticationRoutes = (app) => {
       secure: false,
       auth: {
         user: process.env.EMAIL,
-        pass: process.env.SENHA
+        pass: process.env.PASSWORD_EMAIL
       }
     })
 
-    const mensagem =
+    const emailConfig =
     {
       from: process.env.EMAIL,
       to: req.body.email,
       subject: 'Código de verificação',
-      html: emailCliente(codigo),
-      text: `Código de verificação: ${codigo}`
+      html: messageHTML(code),
+      text: `Código de verificação: ${code}`
     }
 
-    transport.sendMail(mensagem)
-      .then((response) => {
-        return res.json({ message: "Enviamos um codigo de confirmacao para seu e-mail!" })
-      })
-      .catch((error) => {
-        return res.json({ message: "Digite um e-mail existente!" })
-      })
+    transport.sendMail(emailConfig)
+      .then((response) => res.status(200).send({ message: "Enviamos um codigo de confirmacao para seu e-mail!" }))
+      .catch((error) => res.status(400)({ message: "Digite um e-mail existente!" }))
 
   })
 
 
-  app.post('/verificar_codigo', (req, res) => {   // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
+  app.post('/check_code', (req, res) => {   // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
 
-    verificarCodigo(req.body.email, req.body.codigo)
+    checkCode(req.body.email, req.body.code)
       .then((response) => {
         if (!response) {
-          res.json({ message: "Código inválido ou expirado!" })
+          res.status(400).send({ message: "Código inválido ou expirado!" })
         } else {
-          res.json({ message: "Código verificado com sucesso!" })
+          res.status(200).send({ message: "Código verificado com sucesso!" })
         }
       })
       .catch((error) => console(error))

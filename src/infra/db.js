@@ -19,7 +19,7 @@ export const connectDB = async () => {
 
 
 // Connection with sqlite
-export async function openDb () {
+export async function sqliteConnection() {
   return open(
       {
           filename: './src/database/database.db',
