@@ -33,6 +33,7 @@ export const User = mongoose.model(
     },
     course: String,
     password: String,
+    complete_register: Boolean,
   },
   "Users"
 );

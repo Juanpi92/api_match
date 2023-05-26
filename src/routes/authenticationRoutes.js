@@ -4,11 +4,9 @@ import { User } from "../models/User.js";
 import { validate } from "../authorization/auth.js";
 import multer from "multer";
 import path from "path";
-
-import nodemailer from 'nodemailer'
-import { messageHTML } from '../views/email.js';
-import { saveCode, deleteCode, checkCode } from '../controlers/codeSqlite.js';
-
+import nodemailer from "nodemailer";
+import { messageHTML } from "../views/email.js";
+import { saveCode, deleteCode, checkCode } from "../controllers/codeSqlite.js";
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "uploads/" });
@@ -148,7 +146,7 @@ export const authenticationRoutes = (app) => {
       if (exist_email) {
         return res.status(400).send({ error: "E-mail already registered" });
       }
-      //Checking if the e-mail exist into the database or not.
+      //Checking if the phone exist into the database or not.
       let exist_phone = await User.findOne({ phone: req.body.phone });
       if (exist_phone) {
         return res.status(400).send({ error: "Phone already registered" });
@@ -213,58 +211,83 @@ export const authenticationRoutes = (app) => {
     }
   });
 
-
-
-
-
   // Email verification routes
 
-  app.post('/code_email', (req, res) => {   // Route responsible for receiving the customer's email and sending a code by email
+  app.post("/code_email", (req, res) => {
+    // Route responsible for receiving the customer's email and sending a code by email
+    const code = Math.floor(Math.random() * 9000) + 1000; // 4 digit random code generator
 
-    const code = Math.floor(Math.random() * 9000) + 1000;   // 4 digit random code generator
-
-    saveCode(req.body.email, code)   // Function that saves the email and code in the database
-    deleteCode(req.body.email, code)   // Function that deletes the email and code stored by the above function from the database after 30 seconds
-
+    saveCode(req.body.email, code); // Function that saves the email and code in the database
+    deleteCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
     const transport = nodemailer.createTransport({
-      host: 'smtp.office365.com',
+      host: "smtp.office365.com",
       port: 587,
       secure: false,
       auth: {
         user: process.env.EMAIL,
-        pass: process.env.PASSWORD_EMAIL
-      }
-    })
+        pass: process.env.PASSWORD_EMAIL,
+      },
+    });
 
-    const emailConfig =
-    {
+    const emailConfig = {
       from: process.env.EMAIL,
       to: req.body.email,
-      subject: 'Código de verificação',
+      subject: "Código de verificação",
       html: messageHTML(code),
-      text: `Código de verificação: ${code}`
+      text: `Código de verificação: ${code}`,
+    };
+
+    transport
+      .sendMail(emailConfig)
+      .then((response) =>
+        res.status(200).send({
+          message: "Enviamos um codigo de confirmacao para seu e-mail!",
+        })
+      )
+      .catch((error) =>
+        res.status(400).send({ message: "Digite um e-mail existente!" })
+      );
+  });
+
+  app.post("/check_code", async (req, res) => {
+    // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
+    try {
+      let check = await checkCode(req.body.email, req.body.code);
+      if (!check) {
+        return res
+          .status(400)
+          .send({ message: "Código inválido ou expirado!" });
+      }
+      let exist_email = await User.findOne({ email: req.body.email });
+      if (!exist_email) {
+        return res
+          .status(202)
+          .send({ message: "Continue with customer registration" });
+      }
+      //Completar o cadastro
+      if (exist_email.complete_register === false) {
+        let myuser = exist_email.toJSON();
+        delete myuser.password;
+        delete myuser.__v;
+        //Sending the user and the token.
+        return res.status(403).send(myuser);
+      }
+
+      //Doing the automatic login.
+      let myuser = exist_email.toJSON();
+      delete myuser.password;
+      delete myuser.__v;
+      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
+        expiresIn: "2h",
+      });
+
+      //Sending the user and the token.
+      res.setHeader("auth-token", JSON.stringify(token));
+      res.status(200).send(myuser);
+    } catch (error) {
+      res.status(500).send(error);
     }
 
-    transport.sendMail(emailConfig)
-      .then((response) => res.status(200).send({ message: "Enviamos um codigo de confirmacao para seu e-mail!" }))
-      .catch((error) => res.status(400)({ message: "Digite um e-mail existente!" }))
-
-  })
-
-
-  app.post('/check_code', (req, res) => {   // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
-
-    checkCode(req.body.email, req.body.code)
-      .then((response) => {
-        if (!response) {
-          res.status(400).send({ message: "Código inválido ou expirado!" })
-        } else {
-          res.status(200).send({ message: "Código verificado com sucesso!" })
-        }
-      })
-      .catch((error) => console(error))
-
-  })
-
-
+    // check if i can do the register or the automatic login
+  });
 };
