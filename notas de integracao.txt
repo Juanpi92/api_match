@@ -1,0 +1,75 @@
+Notes in English:
+
+Added dependencies:
+nodemailer
+sqlite
+sqlite3
+
+
+Added environment variables:
+EMAIL
+SENHA
+
+./src/app.js
+Added 'express.urlencoded({extended: true})', to read the body.
+
+
+./src/routes/authenticationRoutes.js
+Added the '/codigo_email' and '/verificar_codigo' routes
+Added imports nodemailer, emailClient, storeCodigo, excludeCodigo and verifyCodigo.
+
+
+./src/infra/db.js
+Added sqlite database connection
+
+
+./src/controlers
+Created the file 'codigosSqlite.js' that contains the sqlite codes.
+
+
+./src/views/email.js
+Created the file 'email.js' which is responsible for saving the html to be displayed to those who will receive the code in the email.
+
+
+./src/views/database/database.db
+Created file responsible for the database that will temporarily store the verification code.
+
+
+
+
+Notas em portugues:
+
+Dependências adicionadas:
+nodemailer
+sqlite
+sqlite3
+
+
+Variáveis de ambiente adicionadas:
+EMAIL
+SENHA
+
+
+./src/app.js
+Adicionado 'express.urlencoded({extended: true})', para ler o body.
+
+
+./src/routes/authenticationRoutes.js
+Adicionado as rotas '/codigo_email' e '/verificar_codigo'
+Adicionado importes nodemailer, emailCliente, armazenarCodigo, excluirCodigo e verificarCodigo.
+
+
+./src/infra/db.js
+Adicionado a conexão do banco de dados sqlite
+
+
+./src/controlers
+Criado o arquivo 'codigosSqlite.js' que contém os códigos sqlite.
+
+
+./src/views/email.js
+Criado o arquivo 'email.js' que fica responsável por guardar o html a ser exibido para quem vai receber o código no e-mail.
+
+
+./src/views/database/database.db
+Criado arquivo responsável pelo banco de dados que vai armazenar temporariamente o código de verificação.
