@@ -37,7 +37,7 @@ export const User = mongoose.model(
     },
     course: { type: String, default: "UVA" },
     password: {
-      String,
+      type: String,
       default: "default value",
     },
     complete_register: { type: Boolean, default: false },

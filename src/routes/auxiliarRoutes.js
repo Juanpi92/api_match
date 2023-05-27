@@ -77,6 +77,70 @@ export const auxiliarRoutes = (app) => {
     }
   });
 
+  app.post("/register", async (req, res) => {
+    try {
+      let {
+        name,
+        lastName,
+        about,
+        location,
+        preference,
+        age,
+        gender,
+        phone,
+        email,
+        photos,
+        course,
+        password,
+      } = req.body;
+      //Here we encripted the password.
+      let hashed_password = await bcrypt.hash(
+        password,
+        Number(process.env.PASSOS)
+      );
+      let user = {
+        name,
+        lastName,
+        about,
+        location,
+        preference,
+        age,
+        gender,
+        phone,
+        email,
+        photos,
+        course,
+        password: hashed_password,
+      };
+      //Checking if the e-mail exist into the database or not.
+      let exist_email = await User.findOne({ email: user.email });
+      if (exist_email) {
+        return res.status(400).send({ error: "E-mail already registered" });
+      }
+      //Checking if the e-mail exist into the database or not.
+      let exist_phone = await User.findOne({ phone: user.phone });
+      if (exist_phone) {
+        return res.status(400).send({ error: "Phone already registered" });
+      }
+
+      let myuser = await User.create(user);
+
+      //Doing the automatic login.
+      myuser = myuser.toJSON();
+      delete myuser.password;
+      delete myuser.__v;
+      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
+        expiresIn: "2h",
+      });
+
+      //Sending the user and the token.
+      res.setHeader("auth-token", JSON.stringify(token));
+      res.status(201).send(myuser);
+    } catch (error) {
+      res.status(500).send({ error: "Can't access the database!" });
+    }
+  });
+
   //login route
   app.get("/login", async (req, res) => {
     try {
