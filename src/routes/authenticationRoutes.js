@@ -6,15 +6,42 @@ import multer from "multer";
 import path from "path";
 import nodemailer from "nodemailer";
 import { messageHTML } from "../views/email.js";
-import { saveCode, deleteCode, checkCode } from "../controllers/codeSqlite.js";
+import { saveCode, deleteCode, checkCode, randomCodeGenerator } from "../controllers/codeSqlite.js";
+
+// API SMS imports PROXIMO PASSO: 
+var unirest = require("unirest");
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "uploads/" });
 
   app.post("/sms", async (req, res) => {
+
+    const code = randomCodeGenerator()
     try {
+      let req = unirest("POST", "https://apihttp.disparopro.com.br:8433/mt");
       let { phone } = req.body;
-      //Create the code to send a SMS with the auth code and storage thesedata in a db.
+      let token = process.env.SMS_API_TOKEN
+
+      //Send the SMS
+      req.headers({
+        "content-type": "application/json",
+        "authorization": `Bearer ${token}`
+      });
+      req.type("json");
+
+      req.send([
+        {
+          "numero": `${phone}`,
+          "servico": "short",
+          "mensagem": `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+          "codificacao": "0"
+        }
+      ]);
+
+      req.end(function (res) {
+        if (res.error) throw new Error(res.error);
+        console.log(res.body);
+      });
 
       res.status(200).send({ message: "the code was sent successfully" });
     } catch (error) {
@@ -22,7 +49,7 @@ export const authenticationRoutes = (app) => {
     }
   });
   app.post("/confirm_code", async (req, res) => {
-    let { phone, sms_code, timestamp } = req.body;
+    let { phone, code, timestamp } = req.body;
     //Check if the user is registered, and then make the login.
 
     //Create the code to confirm the validation of the SMS code(?).
@@ -215,7 +242,7 @@ export const authenticationRoutes = (app) => {
 
   app.post("/code_email", (req, res) => {
     // Route responsible for receiving the customer's email and sending a code by email
-    const code = Math.floor(Math.random() * 9000) + 1000; // 4 digit random code generator
+    const code = randomCodeGenerator()
 
     saveCode(req.body.email, code); // Function that saves the email and code in the database
     deleteCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
