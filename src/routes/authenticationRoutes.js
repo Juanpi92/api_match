@@ -6,36 +6,40 @@ import multer from "multer";
 import path from "path";
 import nodemailer from "nodemailer";
 import { messageHTML } from "../views/email.js";
-import { saveCode, deleteCode, checkCode, randomCodeGenerator } from "../controllers/codeSqlite.js";
+import {
+  saveCode,
+  deleteCode,
+  checkCode,
+  randomCodeGenerator,
+} from "../controllers/codeSqlite.js";
 
-// API SMS imports PROXIMO PASSO: 
+// API SMS imports PROXIMO PASSO:
 var unirest = require("unirest");
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "uploads/" });
 
   app.post("/sms", async (req, res) => {
-
-    const code = randomCodeGenerator()
+    const code = randomCodeGenerator();
     try {
       let req = unirest("POST", "https://apihttp.disparopro.com.br:8433/mt");
       let { phone } = req.body;
-      let token = process.env.SMS_API_TOKEN
+      let token = process.env.SMS_API_TOKEN;
 
       //Send the SMS
       req.headers({
         "content-type": "application/json",
-        "authorization": `Bearer ${token}`
+        authorization: `Bearer ${token}`,
       });
       req.type("json");
 
       req.send([
         {
-          "numero": `${phone}`,
-          "servico": "short",
-          "mensagem": `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
-          "codificacao": "0"
-        }
+          numero: `${phone}`,
+          servico: "short",
+          mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+          codificacao: "0",
+        },
       ]);
 
       req.end(function (res) {
@@ -45,7 +49,9 @@ export const authenticationRoutes = (app) => {
 
       res.status(200).send({ message: "the code was sent successfully" });
     } catch (error) {
-      res.status(500).send({ message: "An error occurred while sending the code" });
+      res
+        .status(500)
+        .send({ message: "An error occurred while sending the code" });
     }
   });
   app.post("/confirm_code", async (req, res) => {
@@ -242,10 +248,15 @@ export const authenticationRoutes = (app) => {
 
   app.post("/code_email", (req, res) => {
     // Route responsible for receiving the customer's email and sending a code by email
-    const code = randomCodeGenerator()
+    try {
+      const code = randomCodeGenerator();
 
-    saveCode(req.body.email, code); // Function that saves the email and code in the database
-    deleteCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
+      saveCode(req.body.email, code); // Function that saves the email and code in the database
+      deleteCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
+    } catch (error) {
+      res.status(500).send({ message: "Cant access the database" });
+    }
+
     const transport = nodemailer.createTransport({
       host: "smtp.office365.com",
       port: 587,
@@ -266,14 +277,14 @@ export const authenticationRoutes = (app) => {
 
     transport
       .sendMail(emailConfig)
-      .then((response) =>
-        res.status(200).send({
+      .then((response) => {
+        return res.status(200).send({
           message: "We sent a confirmation code to your email!",
-        })
-      )
-      .catch((error) =>
-        res.status(400).send({ message: "Enter an existing email!" })
-      );
+        });
+      })
+      .catch((error) => {
+        return res.status(400).send({ message: "Enter an existing email!" });
+      });
   });
 
   app.post("/check_code", async (req, res) => {
@@ -281,9 +292,7 @@ export const authenticationRoutes = (app) => {
     try {
       let check = await checkCode(req.body.email, req.body.code);
       if (!check) {
-        return res
-          .status(400)
-          .send({ message: "Invalid or expired code!" });
+        return res.status(400).send({ message: "Invalid or expired code!" });
       }
       let exist_email = await User.findOne({ email: req.body.email });
       if (!exist_email) {
