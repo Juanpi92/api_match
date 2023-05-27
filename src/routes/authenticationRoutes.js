@@ -326,4 +326,5 @@ export const authenticationRoutes = (app) => {
 
     // check if i can do the register or the automatic login
   });
+  app.post("/register_part1", async (req, res) => {});
 };
