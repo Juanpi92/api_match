@@ -1,5 +1,10 @@
 import { sqliteConnection } from "../infra/db.js";
 
+// 4 digit random code generator
+export async function randomCodeGenerator() {
+  return Math.floor(Math.random() * 9000) + 1000;
+}
+
 export async function saveCode(email, code) {
   sqliteConnection().then((db) =>
     db.run(`INSERT INTO code (email, code) VALUES ('${email}', ${code});`)
