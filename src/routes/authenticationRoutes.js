@@ -5,49 +5,45 @@ import { validate } from "../authorization/auth.js";
 import multer from "multer";
 import path from "path";
 import nodemailer from "nodemailer";
+import axios from "axios";
 import { messageHTML } from "../views/email.js";
 import { saveCode, deleteCode, checkCode, randomCodeGenerator } from "../controllers/codeSqlite.js";
 
 // API SMS imports PROXIMO PASSO: 
-var unirest = require("unirest");
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "uploads/" });
+  let token = process.env.SMS_API_TOKEN;
+  let { phone } = req.body;
+  const code = randomCodeGenerator();
+  const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
 
-  app.post("/sms", async (req, res) => {
+  const reqData = {
+    "numero": phone,
+    "servico": "short",
+    "mensagem": `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+    "codificacao": "0"
+  }
 
-    const code = randomCodeGenerator()
-    try {
-      let req = unirest("POST", "https://apihttp.disparopro.com.br:8433/mt");
-      let { phone } = req.body;
-      let token = process.env.SMS_API_TOKEN
+  const reqHeaders = {
+  "content-type": "application/json",
+  "authorization": `Bearer ${process.env.SMS_API_TOKEN}`
+}
 
-      //Send the SMS
-      req.headers({
-        "content-type": "application/json",
-        "authorization": `Bearer ${token}`
-      });
-      req.type("json");
+  //Send the SMS
+  axios.post(apiUrl, reqData, { headers: reqHeaders }
+    )
+    .then(response => {
+      console.log(response.data)
+    })
+    .catch(error => {
+      console.log(error)
+    });
 
-      req.send([
-        {
-          "numero": `${phone}`,
-          "servico": "short",
-          "mensagem": `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
-          "codificacao": "0"
-        }
-      ]);
+  //res.status(200).send({ message: "the code was sent successfully" });
+  //} catch (error) {
+  //res.status(500).send({ message: "An error occurred while sending the code" });
 
-      req.end(function (res) {
-        if (res.error) throw new Error(res.error);
-        console.log(res.body);
-      });
-
-      res.status(200).send({ message: "the code was sent successfully" });
-    } catch (error) {
-      res.status(500).send({ message: "An error occurred while sending the code" });
-    }
-  });
   app.post("/confirm_code", async (req, res) => {
     let { phone, code, timestamp } = req.body;
     //Check if the user is registered, and then make the login.
