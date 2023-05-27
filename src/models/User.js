@@ -6,6 +6,10 @@ export const User = mongoose.model(
     lastName: { type: String, default: "default value" },
     about: { type: String, default: "default value" },
     location: { type: String, default: "default value" },
+    birth_date: {
+      type: Date,
+      default: Date.now(),
+    },
     preference: {
       type: Array,
       default: "heterosexual",

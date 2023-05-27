@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import { validate } from "../authorization/auth.js";
 import multer from "multer";
-import path from "path";
 import nodemailer from "nodemailer";
 import { messageHTML } from "../views/email.js";
 import {
@@ -14,7 +13,8 @@ import {
 } from "../controllers/codeSqlite.js";
 
 // API SMS imports PROXIMO PASSO:
-var unirest = require("unirest");
+//var unirest = require("unirest");
+import unirest from "unirest";
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "uploads/" });
@@ -136,112 +136,8 @@ export const authenticationRoutes = (app) => {
     }
   });
 
-  //login route
-  app.get("/login", async (req, res) => {
-    try {
-      let user = req.body;
-      let password = user.password;
-      const login_property = Object.keys(user)[0];
-      let value = user[login_property];
-      //Tring the user in the database
-      let existe = await User.findOne({
-        $or: [{ email: value }, { phone: value }],
-      });
-      if (!existe) {
-        return res.status(400).send({ error: "User or password wrong" });
-      }
-      let valid = await bcrypt.compare(password, existe.password);
-      if (!valid) {
-        return res.status(400).send({ error: "User or password wrong " });
-      }
-      //Cast the moongose document into a plain javascript object
-      existe = existe.toJSON();
-      delete existe.password;
-      delete existe.__v;
-      let token = jwt.sign(existe, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-      //Send the response
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(200).send(existe);
-    } catch (error) {
-      res.status(500).send({ error: "Cant access to the database" });
-    }
-  });
   app.get("/test_session", validate, async (req, res) => {
     res.status(200).send({ message: "Session dint expire" });
-  });
-
-  app.post("/register_photo", upload.single("image"), async (req, res) => {
-    try {
-      //Checking if the e-mail exist into the database or not.
-      let exist_email = await User.findOne({ email: req.body.email });
-      if (exist_email) {
-        return res.status(400).send({ error: "E-mail already registered" });
-      }
-      //Checking if the phone exist into the database or not.
-      let exist_phone = await User.findOne({ phone: req.body.phone });
-      if (exist_phone) {
-        return res.status(400).send({ error: "Phone already registered" });
-      }
-
-      let {
-        name,
-        lastName,
-        about,
-        location,
-        preference,
-        age,
-        gender,
-        phone,
-        email,
-        course,
-        password,
-      } = req.body;
-
-      //Put the photo in he server
-      const imagen = req.file;
-      const nombreArchivo = imagen.filename;
-      const urlArchivo = `http://localhost:3000/uploads/${nombreArchivo}`;
-
-      let hashed_password = await bcrypt.hash(
-        password,
-        Number(process.env.PASSOS)
-      );
-
-      let user = {
-        name,
-        lastName,
-        about,
-        location,
-        preference,
-        age,
-        gender,
-        phone,
-        email,
-        photos: [urlArchivo],
-        course,
-        password: hashed_password,
-      };
-
-      //Create the user in the database
-      let myuser = await User.create(user);
-
-      //Doing the automatic login.
-      myuser = myuser.toJSON();
-      delete myuser.password;
-      delete myuser.__v;
-      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-
-      //Sending the user and the token.
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(201).send(myuser);
-    } catch (error) {
-      console.log(error);
-      res.status(500).send({ error: "Can't access the database!" });
-    }
   });
 
   // Email verification routes
@@ -326,5 +222,13 @@ export const authenticationRoutes = (app) => {
 
     // check if i can do the register or the automatic login
   });
-  app.post("/register_part1", async (req, res) => {});
+  app.post("/register_part1", async (req, res) => {
+    let { name, lastName, birth_date, gender } = req.body;
+    let user = {
+      name,
+      lastName,
+      birth_date,
+      gender,
+    };
+  });
 };
