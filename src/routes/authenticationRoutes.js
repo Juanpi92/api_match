@@ -168,11 +168,11 @@ export const authenticationRoutes = (app) => {
     try {
       const imagen = req.file;
       const nombreArchivo = imagen.filename;
-      const urlArchivo = `http://localhost:3000/uploads/${nombreArchivo}`;
+      const urlArchivo = `http://localhost:3000/src/uploads/${nombreArchivo}`;
       //Update the User
       let myuser = await User.findByIdAndUpdate(
         req.params.id,
-        { photos: [urlArchivo] },
+        { photos: [urlArchivo], complete_register: true },
         {
           new: true,
         }
