@@ -145,4 +145,52 @@ export const authenticationRoutes = (app) => {
       res.status(500).send(error);
     }
   });
+  app.post("/register_part1", async (req, res) => {
+    let { email, phone, name, lastName, birth_date, gender } = req.body;
+    let user = {
+      email,
+      phone,
+      name,
+      lastName,
+      birth_date,
+      gender,
+    };
+    try {
+      let myuser = await User.create(user);
+      res.status(200).send({ id: myuser._id });
+    } catch (error) {
+      res.status(500).send({ message: "Cant access the database" });
+    }
+  });
+
+  app.patch("/register_part2/:id", upload.single("image"), async (req, res) => {
+    //Put the photo in he server
+    try {
+      const imagen = req.file;
+      const nombreArchivo = imagen.filename;
+      const urlArchivo = `http://localhost:3000/uploads/${nombreArchivo}`;
+      //Update the User
+      let myuser = await User.findByIdAndUpdate(
+        req.params.id,
+        { photos: [urlArchivo] },
+        {
+          new: true,
+        }
+      );
+      //Doing the automatic login.
+      myuser = myuser.toJSON();
+      delete myuser.password;
+      delete myuser.__v;
+      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
+        expiresIn: "2h",
+      });
+
+      //Sending the user and the token.
+      res.setHeader("auth-token", JSON.stringify(token));
+      res.status(201).send(myuser);
+    } catch (error) {
+      console.log(error);
+      res.status(500).send({ message: "Cant access the database" });
+    }
+  });
 };
