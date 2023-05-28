@@ -7,42 +7,46 @@ import path from "path";
 import nodemailer from "nodemailer";
 import axios from "axios";
 import { messageHTML } from "../views/email.js";
-import { saveCode, deleteCode, checkCode, randomCodeGenerator } from "../controllers/codeSqlite.js";
+import {
+  saveCode,
+  deleteCode,
+  checkCode,
+  randomCodeGenerator,
+} from "../controllers/codeSqlite.js";
 
-// API SMS imports PROXIMO PASSO: 
+// API SMS imports PROXIMO PASSO:
 
 export const authenticationRoutes = (app) => {
-  const upload = multer({ dest: "uploads/" });
-  let token = process.env.SMS_API_TOKEN;
-  let { phone } = req.body;
-  const code = randomCodeGenerator();
-  const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
+  const upload = multer({ dest: "src/uploads/" });
 
-  const reqData = {
-    "numero": phone,
-    "servico": "short",
-    "mensagem": `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
-    "codificacao": "0"
-  }
+  app.post("/send_sms", async (req, res) => {
+    let token = process.env.SMS_API_TOKEN;
+    let { phone } = req.body;
+    const code = randomCodeGenerator();
+    const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
 
-  const reqHeaders = {
-  "content-type": "application/json",
-  "authorization": `Bearer ${process.env.SMS_API_TOKEN}`
-}
+    const reqData = {
+      numero: phone,
+      servico: "short",
+      mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+      codificacao: "0",
+    };
 
-  //Send the SMS
-  axios.post(apiUrl, reqData, { headers: reqHeaders }
-    )
-    .then(response => {
-      console.log(response.data)
-    })
-    .catch(error => {
-      console.log(error)
-    });
+    const reqHeaders = {
+      "content-type": "application/json",
+      authorization: `Bearer ${process.env.SMS_API_TOKEN}`,
+    };
 
-  //res.status(200).send({ message: "the code was sent successfully" });
-  //} catch (error) {
-  //res.status(500).send({ message: "An error occurred while sending the code" });
+    //Send the SMS
+    axios
+      .post(apiUrl, reqData, { headers: reqHeaders })
+      .then((response) => {
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  });
 
   app.post("/confirm_code", async (req, res) => {
     let { phone, code, timestamp } = req.body;
@@ -62,183 +66,15 @@ export const authenticationRoutes = (app) => {
     res.status(201).send(myuser);
   });
 
-  app.post("/register", async (req, res) => {
-    try {
-      let {
-        name,
-        lastName,
-        about,
-        location,
-        preference,
-        age,
-        gender,
-        phone,
-        email,
-        photos,
-        course,
-        password,
-      } = req.body;
-      //Here we encripted the password.
-      let hashed_password = await bcrypt.hash(
-        password,
-        Number(process.env.PASSOS)
-      );
-      let user = {
-        name,
-        lastName,
-        about,
-        location,
-        preference,
-        age,
-        gender,
-        phone,
-        email,
-        photos,
-        course,
-        password: hashed_password,
-      };
-      //Checking if the e-mail exist into the database or not.
-      let exist_email = await User.findOne({ email: user.email });
-      if (exist_email) {
-        return res.status(400).send({ error: "E-mail already registered" });
-      }
-      //Checking if the e-mail exist into the database or not.
-      let exist_phone = await User.findOne({ phone: user.phone });
-      if (exist_phone) {
-        return res.status(400).send({ error: "Phone already registered" });
-      }
-
-      let myuser = await User.create(user);
-
-      //Doing the automatic login.
-      myuser = myuser.toJSON();
-      delete myuser.password;
-      delete myuser.__v;
-      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-
-      //Sending the user and the token.
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(201).send(myuser);
-    } catch (error) {
-      res.status(500).send({ error: "Can't access the database!" });
-    }
-  });
-
-  //login route
-  app.get("/login", async (req, res) => {
-    try {
-      let user = req.body;
-      let password = user.password;
-      const login_property = Object.keys(user)[0];
-      let value = user[login_property];
-      //Tring the user in the database
-      let existe = await User.findOne({
-        $or: [{ email: value }, { phone: value }],
-      });
-      if (!existe) {
-        return res.status(400).send({ error: "User or password wrong" });
-      }
-      let valid = await bcrypt.compare(password, existe.password);
-      if (!valid) {
-        return res.status(400).send({ error: "User or password wrong " });
-      }
-      //Cast the moongose document into a plain javascript object
-      existe = existe.toJSON();
-      delete existe.password;
-      delete existe.__v;
-      let token = jwt.sign(existe, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-      //Send the response
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(200).send(existe);
-    } catch (error) {
-      res.status(500).send({ error: "Cant access to the database" });
-    }
-  });
   app.get("/test_session", validate, async (req, res) => {
     res.status(200).send({ message: "Session dint expire" });
-  });
-
-  app.post("/register_photo", upload.single("image"), async (req, res) => {
-    try {
-      //Checking if the e-mail exist into the database or not.
-      let exist_email = await User.findOne({ email: req.body.email });
-      if (exist_email) {
-        return res.status(400).send({ error: "E-mail already registered" });
-      }
-      //Checking if the phone exist into the database or not.
-      let exist_phone = await User.findOne({ phone: req.body.phone });
-      if (exist_phone) {
-        return res.status(400).send({ error: "Phone already registered" });
-      }
-
-      let {
-        name,
-        lastName,
-        about,
-        location,
-        preference,
-        age,
-        gender,
-        phone,
-        email,
-        course,
-        password,
-      } = req.body;
-
-      //Put the photo in he server
-      const imagen = req.file;
-      const nombreArchivo = imagen.filename;
-      const urlArchivo = `http://localhost:3000/uploads/${nombreArchivo}`;
-
-      let hashed_password = await bcrypt.hash(
-        password,
-        Number(process.env.PASSOS)
-      );
-
-      let user = {
-        name,
-        lastName,
-        about,
-        location,
-        preference,
-        age,
-        gender,
-        phone,
-        email,
-        photos: [urlArchivo],
-        course,
-        password: hashed_password,
-      };
-
-      //Create the user in the database
-      let myuser = await User.create(user);
-
-      //Doing the automatic login.
-      myuser = myuser.toJSON();
-      delete myuser.password;
-      delete myuser.__v;
-      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-
-      //Sending the user and the token.
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(201).send(myuser);
-    } catch (error) {
-      console.log(error);
-      res.status(500).send({ error: "Can't access the database!" });
-    }
   });
 
   // Email verification routes
 
   app.post("/code_email", (req, res) => {
     // Route responsible for receiving the customer's email and sending a code by email
-    const code = randomCodeGenerator()
+    const code = randomCodeGenerator();
 
     saveCode(req.body.email, code); // Function that saves the email and code in the database
     deleteCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
@@ -277,9 +113,7 @@ export const authenticationRoutes = (app) => {
     try {
       let check = await checkCode(req.body.email, req.body.code);
       if (!check) {
-        return res
-          .status(400)
-          .send({ message: "Invalid or expired code!" });
+        return res.status(400).send({ message: "Invalid or expired code!" });
       }
       let exist_email = await User.findOne({ email: req.body.email });
       if (!exist_email) {
@@ -310,7 +144,53 @@ export const authenticationRoutes = (app) => {
     } catch (error) {
       res.status(500).send(error);
     }
+  });
+  app.post("/register_part1", async (req, res) => {
+    let { email, phone, name, lastName, birth_date, gender } = req.body;
+    let user = {
+      email,
+      phone,
+      name,
+      lastName,
+      birth_date,
+      gender,
+    };
+    try {
+      let myuser = await User.create(user);
+      res.status(200).send({ id: myuser._id });
+    } catch (error) {
+      res.status(500).send({ message: "Cant access the database" });
+    }
+  });
 
-    // check if i can do the register or the automatic login
+  app.patch("/register_part2/:id", upload.single("image"), async (req, res) => {
+    //Put the photo in he server
+    try {
+      const imagen = req.file;
+      const nombreArchivo = imagen.filename;
+      const urlArchivo = `http://localhost:3000/src/uploads/${nombreArchivo}`;
+      //Update the User
+      let myuser = await User.findByIdAndUpdate(
+        req.params.id,
+        { photos: [urlArchivo], complete_register: true },
+        {
+          new: true,
+        }
+      );
+      //Doing the automatic login.
+      myuser = myuser.toJSON();
+      delete myuser.password;
+      delete myuser.__v;
+      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
+        expiresIn: "2h",
+      });
+
+      //Sending the user and the token.
+      res.setHeader("auth-token", JSON.stringify(token));
+      res.status(201).send(myuser);
+    } catch (error) {
+      console.log(error);
+      res.status(500).send({ message: "Cant access the database" });
+    }
   });
 };
