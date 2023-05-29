@@ -5,29 +5,62 @@ export async function randomCodeGenerator() {
   return Math.floor(Math.random() * 9000) + 1000;
 }
 
-export async function saveCode(email, code) {
+export async function saveEmailCode(email, code) {
   sqliteConnection().then((db) =>
-    db.run(`INSERT INTO code (email, code) VALUES ('${email}', ${code});`)
+    db.run(`INSERT INTO db_emailcode (email, code) VALUES ('${email}', ${code});`)
   );
 }
 
-export async function deleteCode(email, code) {
+export async function deleteEmailCode(email, code) {
   setTimeout(function () {
     sqliteConnection().then((db) =>
-      db.run(`DELETE FROM code WHERE email = '${email}' AND code = ${code};`)
+      db.run(`DELETE FROM db_emailcode WHERE email = '${email}' AND code = ${code};`)
     );
   }, 300000);
 }
 
-export async function checkCode(email, code) {
+export async function checkEmailCode(email, code) {
   return sqliteConnection().then((db) => {
     return db.get(
-      `SELECT * FROM code WHERE email = '${email}' AND code = ${code}`,
+      `SELECT * FROM db_emailcode WHERE email = '${email}' AND code = ${code}`,
       function (err, results) {
         if (err) {
           throw new Error({ message: "Error in the database" });
         } else {
-          // console.log("terminado");
+          console.log("terminado");
+        }
+      }
+    );
+  });
+}
+
+//////// SMS (TEMPORARIO, A IDEIA É TER APENAS 1 FUNCAO PRA CADA AÇÃO, TANTO PRA EMAIL TANTO PRA SMS)
+
+
+export async function saveSmsCode(phone, code) {
+  sqliteConnection().then((db) =>
+    db.run(`INSERT INTO db_smscode (phone, code) VALUES ('${phone}', ${code});`)
+  );
+}
+
+export async function deleteSmsCode(phone, code) {
+  setTimeout(function () {
+    sqliteConnection().then((db) =>
+      db.run(`DELETE FROM db_smscode WHERE phone = '${phone}' AND code = ${code};`)
+    );
+  }, 20000);
+  //300000
+}
+
+export async function checkSmsCode(phone, code) {
+  return sqliteConnection().then((db) => {
+    return db.get(
+      `SELECT * FROM db_smscode WHERE phone = '${phone}' AND code = ${code}`,
+      function (err, results) {
+        if (err) {
+          throw new Error({ message: "Error in the database" });
+        } else {
+          console.log("terminado", results);
         }
       }
     );

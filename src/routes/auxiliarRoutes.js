@@ -33,9 +33,9 @@ export const authenticationRoutes = (app) => {
       } = req.body;
 
       //Put the photo in he server
-      const imagen = req.file;
-      const nombreArchivo = imagen.filename;
-      const urlArchivo = `http://localhost:3000/uploads/${nombreArchivo}`;
+      const image = req.file;
+      const fileName = image.filename;
+      const fileUrl = `http://localhost:3000/uploads/${fileName}`;
 
       let hashed_password = await bcrypt.hash(
         password,
@@ -52,7 +52,7 @@ export const authenticationRoutes = (app) => {
         gender,
         phone,
         email,
-        photos: [urlArchivo],
+        photos: [fileUrl],
         course,
         password: hashed_password,
       };
