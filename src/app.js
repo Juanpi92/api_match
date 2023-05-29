@@ -11,19 +11,21 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "uploads"), { fallthrough: false })
+  "/src/uploads",
+  express.static(path.join(process.cwd(), "src/uploads"), {
+    fallthrough: false,
+  })
 );
 
 app.use(cors());
 mongoose.set("strictQuery", false);
 
-app.use(    // Added to capture user email
+app.use(
+  // Added to capture user email
   express.urlencoded({
-    extended: true
+    extended: true,
   })
-)
-
+);
 
 //Connecting to the database.
 connectDB();
