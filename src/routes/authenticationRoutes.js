@@ -14,39 +14,36 @@ import {
   randomCodeGenerator,
 } from "../controllers/codeSqlite.js";
 
-// API SMS imports PROXIMO PASSO:
+// API SMS 
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "src/uploads/" });
 
   app.post("/send_sms", async (req, res) => {
+    try {
     let token = process.env.SMS_API_TOKEN;
-    let { phone } = req.body;
-    const code = randomCodeGenerator();
+    const code = await randomCodeGenerator();
     const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
 
-    const reqData = {
-      numero: phone,
-      servico: "short",
-      mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
-      codificacao: "0",
-    };
+    const reqData = [{
+      "numero": req.body.phone,
+      "servico": "short",
+      "mensagem": `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+      "codificacao": "0",
+    }];
 
-    const reqHeaders = {
-      "content-type": "application/json",
-      authorization: `Bearer ${process.env.SMS_API_TOKEN}`,
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
     };
 
     //Send the SMS
-    axios
-      .post(apiUrl, reqData, { headers: reqHeaders })
-      .then((response) => {
-        console.log(response.data);
-      })
-      .catch((error) => {
+    const response = await axios.post( apiUrl, reqData, { headers } )
+      res.json(response.data)
+  }
+      catch(error) {
         console.log(error);
-      });
-  });
+      }});
 
   app.post("/confirm_code", async (req, res) => {
     let { phone, code, timestamp } = req.body;
