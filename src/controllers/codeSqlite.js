@@ -48,8 +48,8 @@ export async function deleteSmsCode(phone, code) {
     sqliteConnection().then((db) =>
       db.run(`DELETE FROM db_smscode WHERE phone = '${phone}' AND code = ${code};`)
     );
-  }, 20000);
-  //300000
+  }, 300000);
+  
 }
 
 export async function checkSmsCode(phone, code) {
