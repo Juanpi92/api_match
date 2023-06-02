@@ -4,8 +4,14 @@ import multer from "multer";
 import nodemailer from "nodemailer";
 import axios from "axios";
 import { messageHTML } from "../views/email.js";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
+import sharp from "sharp";
 
 import express from "express";
 import dotenv from "dotenv";
@@ -219,25 +225,27 @@ export const authenticationRoutes = (app) => {
   app.patch("/register_part2/:id", upload.single("image"), async (req, res) => {
     //Put the photo in the server
     try {
+      let imagen = await sharp(req.file.buffer)
+        .resize({ heigth: 1920, width: 1080, fit: "contain" })
+        .toBuffer();
       //Send the image to S3
       if (!req.file) {
         return res.status(400).send({ error: "Nenhuma imagem fornecida" });
       }
+
       const params = {
         Bucket: process.env.BUCKET_NAME,
-        Key: `${uuidv4()}-${req.file.originalname}`,
-        Body: req.file.buffer,
+        Key: `profile${req.params.id}`,
+        Body: imagen,
         ContentType: req.file.mimetype,
       };
       const command = new PutObjectCommand(params);
       await s3.send(command);
 
-      // const imageUrl = `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`;
-      /*
       //Update the User
       let myuser = await User.findByIdAndUpdate(
         req.params.id,
-        { photos: [photoUrl], complete_register: true },
+        { photo_profile: `profile${req.params.id}`, complete_register: true },
         {
           new: true,
         }
@@ -250,11 +258,20 @@ export const authenticationRoutes = (app) => {
         expiresIn: "2h",
       });
 
+      //Creating an temporary url for the bucket object
+      let getObjectParams = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: `profile${req.params.id}`,
+      };
+
+      const command2 = new GetObjectCommand(getObjectParams);
+      myuser.photo_profile = await getSignedUrl(s3, command2, {
+        expiresIn: 10800,
+      });
+
       //Sending the user and the token.
       res.setHeader("auth-token", JSON.stringify(token));
       res.status(201).send(myuser);
-      */
-      res.send({});
     } catch (error) {
       console.log(error);
       res.status(500).send({ message: "Cant access the database" });
