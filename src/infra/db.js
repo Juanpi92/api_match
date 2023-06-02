@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
-import sqlite3 from 'sqlite3'
-import { open } from 'sqlite'
-
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 
 // Connection with mongoDB
 export const connectDB = async () => {
@@ -17,13 +16,10 @@ export const connectDB = async () => {
   }
 };
 
-
 // Connection with sqlite
 export async function sqliteConnection() {
-  return open(
-      {
-          filename: './src/database/database.db',
-          driver: sqlite3.Database
-      }
-  )
+  return open({
+    filename: "./src/database/database.db",
+    driver: sqlite3.Database,
+  });
 }
