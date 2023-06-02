@@ -212,7 +212,7 @@ export const authenticationRoutes = (app) => {
     try {
       const image = req.file;
       const fileName = image.filename;
-      const fileUrl = `http://localhost:3000/src/uploads/${fileName}`;
+      const fileUrl = `https://unimatch.onrender.com/src/uploads/${fileName}`;
       //Update the User
       let myuser = await User.findByIdAndUpdate(
         req.params.id,
