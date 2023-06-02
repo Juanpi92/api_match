@@ -137,13 +137,11 @@ export const authenticationRoutes = (app) => {
     saveEmailCode(req.body.email, code); // Function that saves the email and code in the database
     deleteEmailCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
     const transport = nodemailer.createTransport({
-      host: "smtp.office365.com",
-      port: 587,
-      secure: false,
+      service: 'gmail',
       auth: {
         user: process.env.EMAIL,
-        pass: process.env.PASSWORD_EMAIL,
-      },
+        pass: process.env.PASSWORD_EMAIL
+      }
     });
 
     const emailConfig = {
