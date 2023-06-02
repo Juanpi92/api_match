@@ -4,6 +4,8 @@ import multer from "multer";
 import nodemailer from "nodemailer";
 import axios from "axios";
 import { messageHTML } from "../views/email.js";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuidv4 } from "uuid";
 
 import express from "express";
 import dotenv from "dotenv";
@@ -25,7 +27,14 @@ import {
 ///////////////////////////// SMS ROUTES
 
 export const authenticationRoutes = (app) => {
-  const upload = multer({ dest: "src/uploads/" });
+  const upload = multer({ storage: multer.memoryStorage() });
+  const s3 = new S3Client({
+    credentials: {
+      accessKeyId: process.env.ACCESS_KEY,
+      secretAccessKey: process.env.SECRET_ACCESS_KEY,
+    },
+    region: process.env.BUCKET_REGION,
+  });
 
   app.post("/send_sms", async (req, res) => {
     try {
@@ -210,13 +219,25 @@ export const authenticationRoutes = (app) => {
   app.patch("/register_part2/:id", upload.single("image"), async (req, res) => {
     //Put the photo in the server
     try {
-      const image = req.file;
-      const fileName = image.filename;
-      const fileUrl = `https://unimatch.onrender.com/src/uploads/${fileName}`;
+      //Send the image to S3
+      if (!req.file) {
+        return res.status(400).send({ error: "Nenhuma imagem fornecida" });
+      }
+      const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: `${uuidv4()}-${req.file.originalname}`,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+      };
+      const command = new PutObjectCommand(params);
+      await s3.send(command);
+
+      // const imageUrl = `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`;
+      /*
       //Update the User
       let myuser = await User.findByIdAndUpdate(
         req.params.id,
-        { photos: [fileUrl], complete_register: true },
+        { photos: [photoUrl], complete_register: true },
         {
           new: true,
         }
@@ -232,6 +253,8 @@ export const authenticationRoutes = (app) => {
       //Sending the user and the token.
       res.setHeader("auth-token", JSON.stringify(token));
       res.status(201).send(myuser);
+      */
+      res.send({});
     } catch (error) {
       console.log(error);
       res.status(500).send({ message: "Cant access the database" });

@@ -28,6 +28,10 @@ export const User = mongoose.model(
       default: "default value",
       unique: true,
     },
+    photo_profile: {
+      type: String,
+      default: "default value",
+    },
     photos: {
       type: Array,
       default: [""],
