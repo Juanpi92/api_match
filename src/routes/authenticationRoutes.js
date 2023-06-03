@@ -137,11 +137,11 @@ export const authenticationRoutes = (app) => {
     saveEmailCode(req.body.email, code); // Function that saves the email and code in the database
     deleteEmailCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
     const transport = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.EMAIL,
-        pass: process.env.PASSWORD_EMAIL
-      }
+        pass: process.env.PASSWORD_EMAIL,
+      },
     });
 
     const emailConfig = {
@@ -190,6 +190,35 @@ export const authenticationRoutes = (app) => {
       let myuser = exist_email.toJSON();
       delete myuser.password;
       delete myuser.__v;
+
+      //Creating an temporary url for the bucket object photo profile
+      let getObjectParams = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: myuser.photo_profile,
+      };
+
+      const command2 = new GetObjectCommand(getObjectParams);
+      myuser.photo_profile = await getSignedUrl(s3, command2, {
+        expiresIn: 10800,
+      });
+
+      let temporary;
+      //Creating an temporary url for the bucket objects of all photos
+      if (myuser.photos.length() > 0) {
+        temporary = myuser.photos.map(async (photo) => {
+          let getObjectParams = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: photo,
+          };
+
+          const command2 = new GetObjectCommand(getObjectParams);
+          return await getSignedUrl(s3, command2, {
+            expiresIn: 10800,
+          });
+        });
+        myuser.photos = temporary;
+      }
+
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
         expiresIn: "2h",
       });
@@ -223,13 +252,13 @@ export const authenticationRoutes = (app) => {
   app.patch("/register_part2/:id", upload.single("image"), async (req, res) => {
     //Put the photo in the server
     try {
+      if (!req.file) {
+        return res.status(400).send({ error: "Nenhuma imagem fornecida" });
+      }
       let imagen = await sharp(req.file.buffer)
         .resize({ heigth: 1920, width: 1080, fit: "contain" })
         .toBuffer();
       //Send the image to S3
-      if (!req.file) {
-        return res.status(400).send({ error: "Nenhuma imagem fornecida" });
-      }
 
       const params = {
         Bucket: process.env.BUCKET_NAME,
