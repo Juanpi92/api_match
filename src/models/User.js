@@ -34,7 +34,7 @@ export const User = mongoose.model(
     },
     photos: {
       type: Array,
-      default: [""],
+      default: [],
       items: {
         type: String,
       },

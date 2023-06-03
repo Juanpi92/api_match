@@ -151,7 +151,6 @@ export const authenticationRoutes = (app) => {
       html: messageHTML(code),
       text: `Código de verificação: ${code}`,
     };
-
     transport
       .sendMail(emailConfig)
       .then((response) =>
@@ -197,27 +196,30 @@ export const authenticationRoutes = (app) => {
         Key: myuser.photo_profile,
       };
 
-      const command2 = new GetObjectCommand(getObjectParams);
+      let command2 = new GetObjectCommand(getObjectParams);
       myuser.photo_profile = await getSignedUrl(s3, command2, {
         expiresIn: 10800,
       });
 
-      let temporary;
+      let temporary = [];
       //Creating an temporary url for the bucket objects of all photos
-      if (myuser.photos.length() > 0) {
-        temporary = myuser.photos.map(async (photo) => {
-          let getObjectParams = {
-            Bucket: process.env.BUCKET_NAME,
-            Key: photo,
-          };
+      if (myuser.photos.length > 0) {
+        myuser.photos.forEach(async (photo) => {
+          if (photo !== "") {
+            let getObjectParams = {
+              Bucket: process.env.BUCKET_NAME,
+              Key: photo,
+            };
 
-          const command2 = new GetObjectCommand(getObjectParams);
-          return await getSignedUrl(s3, command2, {
-            expiresIn: 10800,
-          });
+            let command2 = new GetObjectCommand(getObjectParams);
+            let temp = await getSignedUrl(s3, command2, {
+              expiresIn: 10800,
+            });
+            temporary.push(temp);
+          }
         });
-        myuser.photos = temporary;
       }
+      myuser.photos = temporary;
 
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
         expiresIn: "2h",
@@ -225,7 +227,7 @@ export const authenticationRoutes = (app) => {
 
       //Sending the user and the token.
       res.setHeader("auth-token", JSON.stringify(token));
-      res.status(200).send(myuser);
+      return res.status(200).send(myuser);
     } catch (error) {
       res.status(500).send(error);
     }
@@ -300,8 +302,7 @@ export const authenticationRoutes = (app) => {
       res.setHeader("auth-token", JSON.stringify(token));
       res.status(201).send(myuser);
     } catch (error) {
-      console.log(error);
-      res.status(500).send({ message: "Cant access the database" });
+      res.status(500).send(error);
     }
   });
 };
