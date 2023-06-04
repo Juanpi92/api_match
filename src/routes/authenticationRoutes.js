@@ -13,13 +13,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import sharp from "sharp";
 
-import express from "express";
-import dotenv from "dotenv";
-dotenv.config();
-const PORT = process.env.PORT || 3000;
-const app = express();
-app.use(express.json());
-
 import {
   saveEmailCode,
   deleteEmailCode,
