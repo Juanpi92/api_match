@@ -197,9 +197,12 @@ export const authenticationRoutes = (app) => {
       };
 
       let command2 = new GetObjectCommand(getObjectParams);
-      myuser.photo_profile = await getSignedUrl(s3, command2, {
-        expiresIn: 10800,
-      });
+      myuser.photo_profile = {
+        url: await getSignedUrl(s3, command2, {
+          expiresIn: 10800,
+        }),
+        id: myuser.photo_profile,
+      };
 
       let temporary = [];
       //Creating an temporary url for the bucket objects of all photos
@@ -215,7 +218,7 @@ export const authenticationRoutes = (app) => {
             let temp = await getSignedUrl(s3, command2, {
               expiresIn: 10800,
             });
-            temporary.push(temp);
+            temporary.push({ url: temp, id: photo });
           }
         });
       }
@@ -294,9 +297,12 @@ export const authenticationRoutes = (app) => {
       };
 
       const command2 = new GetObjectCommand(getObjectParams);
-      myuser.photo_profile = await getSignedUrl(s3, command2, {
-        expiresIn: 10800,
-      });
+      myuser.photo_profile = {
+        url: await getSignedUrl(s3, command2, {
+          expiresIn: 10800,
+        }),
+        id: myuser.photo_profile,
+      };
 
       //Sending the user and the token.
       res.setHeader("auth-token", JSON.stringify(token));
