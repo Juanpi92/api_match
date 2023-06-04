@@ -5,6 +5,7 @@ import { connectDB } from "./infra/db.js";
 import cors from "cors";
 import { authenticationRoutes } from "./routes/authenticationRoutes.js";
 import path from "path";
+import { userRoutes } from "./routes/userRoutes.js";
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +33,9 @@ connectDB();
 
 //Authentication routes.
 authenticationRoutes(app);
+
+//User routes.
+userRoutes(app);
 
 app.get("/", async (req, res) => {
   res.status(200).send({ message: "API is ready to go!" });
