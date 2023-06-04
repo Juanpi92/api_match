@@ -27,16 +27,41 @@ export const userRoutes = (app) => {
       let imagen = await sharp(req.file.buffer)
         .resize({ heigth: 1920, width: 1080, fit: "contain" })
         .toBuffer();
+
       //Send the image to S3
+      let id_photo = `${uuidv4()}-${req.params.id}`;
       const params = {
         Bucket: process.env.BUCKET_NAME,
-        Key: `profile${req.params.id}`,
+        Key: id_photo,
         Body: imagen,
         ContentType: req.file.mimetype,
       };
+
       const command = new PutObjectCommand(params);
       await s3.send(command);
+
+      //Update the User
+      await User.findByIdAndUpdate(req.params.id, {
+        $push: { photos: id_photo },
+      });
+
+      //Creating the temporal URL for the bucket object and send to the client
+      let getObjectParams = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: id_photo,
+      };
+
+      let command2 = new GetObjectCommand(getObjectParams);
+      let photo = {
+        url: await getSignedUrl(s3, command2, {
+          expiresIn: 10800,
+        }),
+        id: id_photo,
+      };
+
+      res.status(201).send(photo);
     } catch (error) {
+      console.log(error);
       res.status(500).send(error);
     }
   });
