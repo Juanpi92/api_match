@@ -18,7 +18,7 @@ export const userRoutes = (app) => {
     },
     region: process.env.BUCKET_REGION,
   });
-  app.post("/post_photo/:id", upload.single("image"), async (req, res) => {
+  app.post("/post_photo/:id_user", upload.single("image"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).send({ error: "Nenhuma imagem fornecida" });
@@ -29,7 +29,7 @@ export const userRoutes = (app) => {
         .toBuffer();
 
       //Send the image to S3
-      let id_photo = `${uuidv4()}-${req.params.id}`;
+      let id_photo = `${uuidv4()}-${req.params.id_user}`;
       const params = {
         Bucket: process.env.BUCKET_NAME,
         Key: id_photo,
@@ -41,7 +41,7 @@ export const userRoutes = (app) => {
       await s3.send(command);
 
       //Update the User
-      await User.findByIdAndUpdate(req.params.id, {
+      await User.findByIdAndUpdate(req.params.id_user, {
         $push: { photos: id_photo },
       });
 
@@ -60,6 +60,16 @@ export const userRoutes = (app) => {
       };
 
       res.status(201).send(photo);
+    } catch (error) {
+      res.status(500).send(error);
+    }
+  });
+  app.delete("/del_photo/:id_user", async (req, res) => {
+    try {
+      let id_photo = req.body.id_photo;
+      let id_user = req.params.id_user;
+
+      res.status(200).send({ id_photo, id_user });
     } catch (error) {
       console.log(error);
       res.status(500).send(error);
