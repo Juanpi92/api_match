@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
@@ -68,6 +69,13 @@ export const userRoutes = (app) => {
     try {
       let id_photo = req.body.id_photo;
       let id_user = req.params.id_user;
+
+      //deleting imagen from S3 bucket
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.BUCKET_NAME,
+        Key: id_photo,
+      });
+      await s3.send(command);
 
       res.status(200).send({ id_photo, id_user });
     } catch (error) {
