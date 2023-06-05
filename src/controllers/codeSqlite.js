@@ -1,6 +1,8 @@
 import { sqliteConnection } from "../infra/db.js";
 
-var timeUntilCodeDelete = 300000 // in ms
+// 300000 ms = 5min
+// 30000 ms = 30s
+var timeUntilCodeDelete = 30000 // in ms
 
 // 4 digit random code generator
 export function randomCodeGenerator() {
@@ -24,12 +26,12 @@ export async function deleteCode(methodRes, code) {
   setTimeout(function () {
     sqliteConnection().then((db) =>
       db.run(
-        `DELETE FROM db_code WHERE method = '${methodRes}' AND code = ${code};`,
+        `DELETE FROM db_code WHERE method = ? AND code = ?`, [methodRes, code],
         function (err, results) {
           if (err) {
             throw new Error({ message: "Error in the database" });
           } else {
-            console.log("terminado", results);
+            console.log("TERMINADO", results);
           }
         }
       )
@@ -40,12 +42,12 @@ export async function deleteCode(methodRes, code) {
 export async function checkCode(methodRes, code) {
   return sqliteConnection().then((db) => {
     return db.get(
-      `SELECT * FROM db_code WHERE method = '${methodRes}' AND code = ${code}`,
+      `SELECT * FROM db_code WHERE method = ? AND code = ?`, [methodRes, code],
       function (err, results) {
         if (err) {
           throw new Error({ message: "Error in the database" });
         } else {
-          console.log(results);
+          console.log( { message: "checkado com sucesso" }, results);
         }
       }
     );

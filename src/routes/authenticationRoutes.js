@@ -101,8 +101,6 @@ export const authenticationRoutes = (app) => {
     } catch (error) {
       console.log(error)
     }
-
-
   })
 
   //Check if the user is registered, and then make the login.
@@ -120,12 +118,19 @@ export const authenticationRoutes = (app) => {
         } else if ('email' in req.body) {
           var method = 'email'
           var methodRes = req.body.email
+
+          var check = await checkCode(methodRes, code);
+          console.log("check: ", check)
+    
+          if (!check) {
+            return res.status(400).send({ message: "Invalid or expired code!" });
+          }
+
         }
-      let check = await checkCode(methodRes, code);
-      if (!check) {
-        return res.status(400).send({ message: "Invalid or expired code!" });
-      }
-      let exist_method = await User.findOne({ method: methodRes });
+      
+      var exist_method = await User.findOne({ method: methodRes });
+      console.log("exist_method: ", exist_method)
+
       if (!exist_method) {
         return res.status(202).send({ message: "Continue with customer registration" });
       }
@@ -164,49 +169,6 @@ export const authenticationRoutes = (app) => {
     res.setHeader("auth-token", JSON.stringify(token));
     res.status(201).send(myuser);
   });
-
-  ///////////////////////////// EMAIL ROUTES
-
-// apagar se o check unico brabo (acima) estiver funcionando
-/*
-  app.post("/check_email", async (req, res) => {
-    // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
-    try {
-      let check = await checkEmailCode(req.body.email, req.body.code);
-      if (!check) {
-        return res.status(400).send({ message: "Invalid or expired code!" });
-      }
-      let exist_email = await User.findOne({ email: req.body.email });
-      if (!exist_email) {
-        return res
-          .status(202)
-          .send({ message: "Continue with customer registration" });
-      }
-      //Completar o cadastro
-      if (exist_email.complete_register === false) {
-        let myuser = exist_email.toJSON();
-        delete myuser.password;
-        delete myuser.__v;
-        //Sending the user and the token.
-        return res.status(403).send(myuser);
-      }
-
-      //Doing the automatic login.
-      let myuser = exist_email.toJSON();
-      delete myuser.password;
-      delete myuser.__v;
-      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-
-      //Sending the user and the token.
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(200).send(myuser);
-    } catch (error) {
-      res.status(500).send(error);
-    }
-  });
-*/
 
   app.post("/register_part1", async (req, res) => {
     let { email, phone, name, lastName, birth_date, gender } = req.body;
@@ -257,5 +219,3 @@ export const authenticationRoutes = (app) => {
     }
   });
 };
-
-// 253
