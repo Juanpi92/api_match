@@ -70,6 +70,18 @@ export const userRoutes = (app) => {
       let id_photo = req.body.id_photo;
       let id_user = req.params.id_user;
 
+      //Updating the user by deleting the photo entry
+      const usuario = await User.findByIdAndUpdate(
+        id_user,
+        { $pull: { photos: id_photo } },
+        { new: true }
+      );
+
+      // Testing if the user exist
+      if (!usuario) {
+        return res.status(404).send({ error: "The User dont exist" });
+      }
+
       //deleting imagen from S3 bucket
       const command = new DeleteObjectCommand({
         Bucket: process.env.BUCKET_NAME,
@@ -77,7 +89,7 @@ export const userRoutes = (app) => {
       });
       await s3.send(command);
 
-      res.status(200).send({ id_photo, id_user });
+      res.status(200).send({ message: "photo sucesfully deleted" });
     } catch (error) {
       console.log(error);
       res.status(500).send(error);
