@@ -13,73 +13,125 @@ const app = express();
 app.use(express.json());
 
 import {
-  saveEmailCode,
-  deleteEmailCode,
-  checkEmailCode,
-  saveSmsCode,
-  deleteSmsCode,
-  checkSmsCode,
+  saveCode,
+  deleteCode,
+  checkCode,
   randomCodeGenerator,
 } from "../controllers/codeSqlite.js";
-
-///////////////////////////// SMS ROUTES
 
 export const authenticationRoutes = (app) => {
   const upload = multer({ dest: "src/uploads/" });
 
-  app.post("/send_sms", async (req, res) => {
+  app.post("/send_code", async (req, res) => {
     try {
-      let token = process.env.SMS_API_TOKEN;
       const code = randomCodeGenerator();
+      // method    == phone // email
+      // methodRes == 12345 // joao@gmail.com
+      
+      // PHONE
+      if ('phone' in req.body) {
+        var method = 'phone'
+        var methodRes = req.body.phone
 
-      saveSmsCode(req.body.phone, code);
-      deleteSmsCode(req.body.phone, code);
+        let token = process.env.SMS_API_TOKEN;
+        const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
 
-      const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
+        const reqData = [
+          {
+            numero: methodRes,
+            servico: "short",
+            mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+            codificacao: "0",
+          },
+        ];
 
-      const reqData = [
-        {
-          numero: req.body.phone,
-          servico: "short",
-          mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
-          codificacao: "0",
-        },
-      ];
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        };
 
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
+        const response = await axios.post(apiUrl, reqData, { headers });
+        res.status(200).send({
+          message: "We sent a confirmation code to your sms!",
+        })
+      }
 
-      //Send the SMS
-      const response = await axios.post(apiUrl, reqData, { headers });
-      res.status(200).send({
-        message: "We sent a confirmation code to your sms!",
-      });
+      // EMAIL
+      else if ('email' in req.body) {
+        var methodRes = req.body.email
+
+        const transport = nodemailer.createTransport({
+          host: "smtp.office365.com",
+          port: 587,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL,
+            pass: process.env.PASSWORD_EMAIL,
+          },
+        });
+
+        const emailConfig = {
+          from: process.env.EMAIL,
+          to: req.body.email,
+          subject: "Código de verificação",
+          html: messageHTML(code),
+          text: `Código de verificação: ${code}`,
+        };
+
+        transport
+          .sendMail(emailConfig)
+          .then((response) =>
+            res.status(200).send({
+              message: "We sent a confirmation code to your email!",
+            })
+          )
+          .catch((error) =>
+            res.status(400).send({ message: "Enter an existing email!" })
+          );
+      }
+      else {
+        res.send(`Nenhum método encontrado`)
+      }
+
+      saveCode(methodRes, code)
+      deleteCode(methodRes, code)
+
+      console.log(`Método: ${methodRes}`)
+
     } catch (error) {
-      res.status(400).send(error);
+      console.log(error)
     }
-  });
+
+
+  })
 
   //Check if the user is registered, and then make the login.
 
-  app.post("/check_sms", async (req, res) => {
-    let { phone, code, timestamp } = req.body;
-    // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
+  app.post("/check_code", async (req, res) => {
     try {
-      let check = await checkSmsCode(req.body.phone, req.body.code);
+        const code = randomCodeGenerator();
+        // method    == phone // email
+        // methodRes == 12345 // joao@gmail.com
+        
+        // PHONE
+        if ('phone' in req.body) {
+          var method = 'phone'
+          var methodRes = req.body.phone
+        } else if ('email' in req.body) {
+          var method = 'email'
+          var methodRes = req.body.email
+        }
+      let check = await checkCode(methodRes, code);
       if (!check) {
         return res.status(400).send({ message: "Invalid or expired code!" });
       }
-      let exist_phone = await User.findOne({ phone: req.body.phone });
-      if (!exist_phone) {
-        return res
-          .status(202)
-          .send({ message: "Continue with customer registration" });
+      let exist_method = await User.findOne({ method: methodRes });
+      if (!exist_method) {
+        return res.status(202).send({ message: "Continue with customer registration" });
       }
       //Completar o cadastro
-      if (exist_phone.complete_register === false) {
-        let myuser = exist_phone.toJSON();
+      if (exist_method.complete_register === false) {
+        let myuser = exist_method.toJSON();
         delete myuser.password;
         delete myuser.__v;
         //Sending the user and the token.
@@ -87,7 +139,7 @@ export const authenticationRoutes = (app) => {
       }
 
       //Doing the automatic login.
-      let myuser = exist_phone.toJSON();
+      let myuser = exist_method.toJSON();
       delete myuser.password;
       delete myuser.__v;
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
@@ -102,7 +154,7 @@ export const authenticationRoutes = (app) => {
     }
 
     //If the code is ok we proceed to auto login
-    let myuser = User.findOne({ phone: phone });
+    let myuser = User.findOne({ method: methodRes });
     myuser = myuser.toJSON();
     delete myuser.password;
     let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
@@ -115,42 +167,8 @@ export const authenticationRoutes = (app) => {
 
   ///////////////////////////// EMAIL ROUTES
 
-  app.post("/send_email", async (req, res) => {
-    // Route responsible for receiving the customer's email and sending a code by email
-    const code = randomCodeGenerator();
-
-    saveEmailCode(req.body.email, code); // Function that saves the email and code in the database
-    deleteEmailCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
-    const transport = nodemailer.createTransport({
-      host: "smtp.office365.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL,
-        pass: process.env.PASSWORD_EMAIL,
-      },
-    });
-
-    const emailConfig = {
-      from: process.env.EMAIL,
-      to: req.body.email,
-      subject: "Código de verificação",
-      html: messageHTML(code),
-      text: `Código de verificação: ${code}`,
-    };
-
-    transport
-      .sendMail(emailConfig)
-      .then((response) =>
-        res.status(200).send({
-          message: "We sent a confirmation code to your email!",
-        })
-      )
-      .catch((error) =>
-        res.status(400).send({ message: "Enter an existing email!" })
-      );
-  });
-
+// apagar se o check unico brabo (acima) estiver funcionando
+/*
   app.post("/check_email", async (req, res) => {
     // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
     try {
@@ -188,6 +206,7 @@ export const authenticationRoutes = (app) => {
       res.status(500).send(error);
     }
   });
+*/
 
   app.post("/register_part1", async (req, res) => {
     let { email, phone, name, lastName, birth_date, gender } = req.body;
@@ -238,3 +257,5 @@ export const authenticationRoutes = (app) => {
     }
   });
 };
+
+// 253
