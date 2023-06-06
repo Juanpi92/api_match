@@ -1,16 +1,12 @@
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import multer from "multer";
-import nodemailer from "nodemailer";
-import axios from "axios";
-import { messageHTML } from "../views/email.js";
 import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { v4 as uuidv4 } from "uuid";
 import sharp from "sharp";
 
 import {
@@ -21,6 +17,8 @@ import {
   deleteSmsCode,
   checkSmsCode,
   randomCodeGenerator,
+  sendSms,
+  sendEmail,
 } from "../controllers/codeSqlite.js";
 
 ///////////////////////////// SMS ROUTES
@@ -35,37 +33,26 @@ export const authenticationRoutes = (app) => {
     region: process.env.BUCKET_REGION,
   });
 
-  app.post("/send_sms", async (req, res) => {
+  app.post("/send_code", async (req, res) => {
     try {
-      let token = process.env.SMS_API_TOKEN;
       const code = randomCodeGenerator();
-
-      saveSmsCode(req.body.phone, code);
-      deleteSmsCode(req.body.phone, code);
-
-      const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
-
-      const reqData = [
-        {
-          numero: req.body.phone,
-          servico: "short",
-          mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
-          codificacao: "0",
-        },
-      ];
-
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-
-      //Send the SMS
-      const response = await axios.post(apiUrl, reqData, { headers });
-      res.status(200).send({
-        message: "We sent a confirmation code to your sms!",
-      });
+      if ("phone" in req.body) {
+        saveSmsCode(req.body.phone, code);
+        deleteSmsCode(req.body.phone, code);
+        await sendSms(req.body.phone, code);
+        return res.status(200).send({
+          message: "We sent a confirmation code to your sms!",
+        });
+      } else if ("email" in req.body) {
+        saveEmailCode(req.body.email, code); // Function that saves the email and code in the database
+        deleteEmailCode(req.body.email, code);
+        await sendEmail(req.body.email, code);
+        return res.status(200).send({
+          message: "We sent a confirmation code to your email!",
+        });
+      }
     } catch (error) {
-      res.status(400).send(error);
+      res.status(400).send(error.message);
     }
   });
 
@@ -122,39 +109,6 @@ export const authenticationRoutes = (app) => {
   });
 
   ///////////////////////////// EMAIL ROUTES
-
-  app.post("/send_email", async (req, res) => {
-    // Route responsible for receiving the customer's email and sending a code by email
-    const code = randomCodeGenerator();
-
-    saveEmailCode(req.body.email, code); // Function that saves the email and code in the database
-    deleteEmailCode(req.body.email, code); // Function that deletes the email and code stored by the above function from the database after 30 seconds
-    const transport = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL,
-        pass: process.env.PASSWORD_EMAIL,
-      },
-    });
-
-    const emailConfig = {
-      from: process.env.EMAIL,
-      to: req.body.email,
-      subject: "Código de verificação",
-      html: messageHTML(code),
-      text: `Código de verificação: ${code}`,
-    };
-    transport
-      .sendMail(emailConfig)
-      .then((response) =>
-        res.status(200).send({
-          message: "We sent a confirmation code to your email!",
-        })
-      )
-      .catch((error) =>
-        res.status(400).send({ message: "Enter an existing email!" })
-      );
-  });
 
   app.post("/check_email", async (req, res) => {
     // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
