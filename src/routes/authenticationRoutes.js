@@ -224,7 +224,9 @@ export const authenticationRoutes = (app) => {
         ];
 
         //Sending the user and the token.
-        res.setHeader("auth-token", JSON.stringify(token));
+        //res.setHeader("auth-token", JSON.stringify(token));
+        // res.status(201).send(myuser);
+        res.setHeader("Authorization", `Bearer ${token}`);
         res.status(201).send(myuser);
       } catch (error) {
         console.log(error);
