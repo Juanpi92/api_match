@@ -99,30 +99,29 @@ export const authenticationRoutes = (app) => {
       delete myuser.password;
       delete myuser.__v;
 
-      //Creating an temporary url for the bucket object photo profile
-      let getObjectParams = {
-        Bucket: process.env.BUCKET_NAME,
-        Key: myuser.photo_profile,
-      };
-
-      let command2 = new GetObjectCommand(getObjectParams);
-      myuser.photo_profile = {
-        url: await getSignedUrl(s3, command2, {
-          expiresIn: 10800,
-        }),
-        id: myuser.photo_profile,
-      };
-
       let temporary = [];
       //Creating an temporary url for the bucket objects of all photos
       if (myuser.photos.length > 0) {
+        for (let index = 0; index < myuser.photos.length; index++) {
+          if (myuser.photos[index] !== "") {
+            let getObjectParams = {
+              Bucket: process.env.BUCKET_NAME,
+              Key: myuser.photos[index],
+            };
+            let command2 = new GetObjectCommand(getObjectParams);
+            let temp = await getSignedUrl(s3, command2, {
+              expiresIn: 10800,
+            });
+            temporary.push({ url: temp, id: myuser.photos[index] });
+          }
+        }
+        /*
         myuser.photos.forEach(async (photo) => {
           if (photo !== "") {
             let getObjectParams = {
               Bucket: process.env.BUCKET_NAME,
               Key: photo,
             };
-
             let command2 = new GetObjectCommand(getObjectParams);
             let temp = await getSignedUrl(s3, command2, {
               expiresIn: 10800,
@@ -130,9 +129,9 @@ export const authenticationRoutes = (app) => {
             temporary.push({ url: temp, id: photo });
           }
         });
+        */
       }
       myuser.photos = temporary;
-
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
         expiresIn: "2h",
       });
@@ -141,6 +140,7 @@ export const authenticationRoutes = (app) => {
       res.setHeader("auth-token", JSON.stringify(token));
       return res.status(200).send(myuser);
     } catch (error) {
+      console.log(error);
       res.status(500).send(error);
     }
   });
