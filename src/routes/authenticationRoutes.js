@@ -19,7 +19,7 @@ import {
   randomCodeGenerator,
   sendSms,
   sendEmail,
-} from "../controllers/codeSqlite.js";
+} from "../controllers/authenticationFunction.js";
 
 ///////////////////////////// SMS ROUTES
 
@@ -56,25 +56,37 @@ export const authenticationRoutes = (app) => {
     }
   });
 
-  //Check if the user is registered, and then make the login.
-
-  app.post("/check_sms", async (req, res) => {
-    let { phone, code, timestamp } = req.body;
-    // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
+  app.post("/check_code", async (req, res) => {
+    // Route responsible for receiving the code from the customer to check if the code is correct or expired
     try {
-      let check = await checkSmsCode(req.body.phone, req.body.code);
-      if (!check) {
-        return res.status(400).send({ message: "Invalid or expired code!" });
+      let exist;
+      if ("email" in req.body) {
+        let check = await checkEmailCode(req.body.email, req.body.code);
+        if (!check) {
+          return res.status(400).send({ message: "Invalid or expired code!" });
+        }
+        exist = await User.findOne({ email: req.body.email });
+        if (!exist) {
+          return res
+            .status(202)
+            .send({ message: "Continue with customer registration" });
+        }
+      } else if ("phone" in req.body) {
+        let check = await checkSmsCode(req.body.phone, req.body.code);
+        if (!check) {
+          return res.status(400).send({ message: "Invalid or expired code!" });
+        }
+        exist = await User.findOne({ phone: req.body.phone });
+        if (!exist) {
+          return res
+            .status(202)
+            .send({ message: "Continue with customer registration" });
+        }
       }
-      let exist_phone = await User.findOne({ phone: req.body.phone });
-      if (!exist_phone) {
-        return res
-          .status(202)
-          .send({ message: "Continue with customer registration" });
-      }
+
       //Completar o cadastro
-      if (exist_phone.complete_register === false) {
-        let myuser = exist_phone.toJSON();
+      if (exist.complete_register === false) {
+        let myuser = exist.toJSON();
         delete myuser.password;
         delete myuser.__v;
         //Sending the user and the token.
@@ -82,58 +94,7 @@ export const authenticationRoutes = (app) => {
       }
 
       //Doing the automatic login.
-      let myuser = exist_phone.toJSON();
-      delete myuser.password;
-      delete myuser.__v;
-      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
-
-      //Sending the user and the token.
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(200).send(myuser);
-    } catch (error) {
-      res.status(500).send(error);
-    }
-
-    //If the code is ok we proceed to auto login
-    let myuser = User.findOne({ phone: phone });
-    myuser = myuser.toJSON();
-    delete myuser.password;
-    let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-      expiresIn: "2h",
-    });
-    //Sending the user and the token.
-    res.setHeader("auth-token", JSON.stringify(token));
-    res.status(201).send(myuser);
-  });
-
-  ///////////////////////////// EMAIL ROUTES
-
-  app.post("/check_email", async (req, res) => {
-    // Route responsible for receiving the code and email from the customer to check if the code is correct or expired
-    try {
-      let check = await checkEmailCode(req.body.email, req.body.code);
-      if (!check) {
-        return res.status(400).send({ message: "Invalid or expired code!" });
-      }
-      let exist_email = await User.findOne({ email: req.body.email });
-      if (!exist_email) {
-        return res
-          .status(202)
-          .send({ message: "Continue with customer registration" });
-      }
-      //Completar o cadastro
-      if (exist_email.complete_register === false) {
-        let myuser = exist_email.toJSON();
-        delete myuser.password;
-        delete myuser.__v;
-        //Sending the user and the token.
-        return res.status(403).send(myuser);
-      }
-
-      //Doing the automatic login.
-      let myuser = exist_email.toJSON();
+      let myuser = exist.toJSON();
       delete myuser.password;
       delete myuser.__v;
 
@@ -179,6 +140,7 @@ export const authenticationRoutes = (app) => {
       res.setHeader("auth-token", JSON.stringify(token));
       return res.status(200).send(myuser);
     } catch (error) {
+      console.log(error);
       res.status(500).send(error);
     }
   });
