@@ -1,8 +1,54 @@
 import { sqliteConnection } from "../infra/db.js";
+import axios from "axios";
+import nodemailer from "nodemailer";
+import { messageHTML } from "../views/email.js";
 
 // 4 digit random code generator
 export function randomCodeGenerator() {
   return Math.floor(Math.random() * 9000) + 1000;
+}
+
+export async function sendSms(phone, code) {
+  let token = process.env.SMS_API_TOKEN;
+  const apiUrl = "https://apihttp.disparopro.com.br:8433/mt";
+
+  const reqData = [
+    {
+      numero: phone,
+      servico: "short",
+      mensagem: `Seu código é: [ ${code} ]. Não compartilhe com terceiros.`,
+      codificacao: "0",
+    },
+  ];
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+  //Send the SMS
+  const response = await axios.post(apiUrl, reqData, { headers });
+}
+export async function sendEmail(email, code) {
+  try {
+    const transport = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD_EMAIL,
+      },
+    });
+
+    const emailConfig = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Código de verificação",
+      html: messageHTML(code),
+      text: `Código de verificação: ${code}`,
+    };
+    const response = await transport.sendMail(emailConfig);
+  } catch (error) {
+    throw new Error("Enter an existing email!");
+  }
 }
 
 export async function saveEmailCode(email, code) {
