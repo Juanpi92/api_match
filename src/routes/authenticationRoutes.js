@@ -214,7 +214,7 @@ export const authenticationRoutes = (app) => {
         };
 
         const command2 = new GetObjectCommand(getObjectParams);
-        myuser.photo = [
+        myuser.photos = [
           {
             url: await getSignedUrl(s3, command2, {
               expiresIn: 10800,
