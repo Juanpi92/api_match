@@ -8,6 +8,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   saveEmailCode,
@@ -140,7 +141,6 @@ export const authenticationRoutes = (app) => {
       res.setHeader("auth-token", JSON.stringify(token));
       return res.status(200).send(myuser);
     } catch (error) {
-      console.log(error);
       res.status(500).send(error);
     }
   });
@@ -163,61 +163,73 @@ export const authenticationRoutes = (app) => {
     }
   });
 
-  app.patch("/register_part2/:id", upload.single("image"), async (req, res) => {
-    //Put the photo in the server
-    try {
-      if (!req.file) {
-        return res.status(400).send({ error: "Nenhuma imagem fornecida" });
-      }
-      let imagen = await sharp(req.file.buffer)
-        .resize({ heigth: 1920, width: 1080, fit: "contain" })
-        .toBuffer();
-      //Send the image to S3
-
-      const params = {
-        Bucket: process.env.BUCKET_NAME,
-        Key: `profile${req.params.id}`,
-        Body: imagen,
-        ContentType: req.file.mimetype,
-      };
-      const command = new PutObjectCommand(params);
-      await s3.send(command);
-
-      //Update the User
-      let myuser = await User.findByIdAndUpdate(
-        req.params.id,
-        { photo_profile: `profile${req.params.id}`, complete_register: true },
-        {
-          new: true,
+  app.patch(
+    "/register_part2/:id_user",
+    upload.single("image"),
+    async (req, res) => {
+      //Put the photo in the server
+      try {
+        if (!req.file) {
+          return res.status(400).send({ error: "Nenhuma imagem fornecida" });
         }
-      );
-      //Doing the automatic login.
-      myuser = myuser.toJSON();
-      delete myuser.password;
-      delete myuser.__v;
-      let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
-        expiresIn: "2h",
-      });
+        let imagen = await sharp(req.file.buffer)
+          .resize({ heigth: 1920, width: 1080, fit: "contain" })
+          .toBuffer();
 
-      //Creating an temporary url for the bucket object
-      let getObjectParams = {
-        Bucket: process.env.BUCKET_NAME,
-        Key: `profile${req.params.id}`,
-      };
+        //Send the image to S3
+        let id_photo = `${uuidv4()}-${req.params.id_user}`;
+        const params = {
+          Bucket: process.env.BUCKET_NAME,
+          Key: id_photo,
+          Body: imagen,
+          ContentType: req.file.mimetype,
+        };
 
-      const command2 = new GetObjectCommand(getObjectParams);
-      myuser.photo_profile = {
-        url: await getSignedUrl(s3, command2, {
-          expiresIn: 10800,
-        }),
-        id: myuser.photo_profile,
-      };
+        const command = new PutObjectCommand(params);
+        await s3.send(command);
 
-      //Sending the user and the token.
-      res.setHeader("auth-token", JSON.stringify(token));
-      res.status(201).send(myuser);
-    } catch (error) {
-      res.status(500).send(error);
+        //Update the User
+        let myuser = await User.findByIdAndUpdate(
+          req.params.id_user,
+          {
+            $push: { photos: id_photo },
+            complete_register: true,
+          },
+          {
+            new: true,
+          }
+        );
+        //Doing the automatic login.
+        myuser = myuser.toJSON();
+        delete myuser.password;
+        delete myuser.__v;
+        let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
+          expiresIn: "2h",
+        });
+
+        //Creating an temporary url for the bucket object
+        let getObjectParams = {
+          Bucket: process.env.BUCKET_NAME,
+          Key: id_photo,
+        };
+
+        const command2 = new GetObjectCommand(getObjectParams);
+        myuser.photo = [
+          {
+            url: await getSignedUrl(s3, command2, {
+              expiresIn: 10800,
+            }),
+            id: id_photo,
+          },
+        ];
+
+        //Sending the user and the token.
+        res.setHeader("auth-token", JSON.stringify(token));
+        res.status(201).send(myuser);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send(error);
+      }
     }
-  });
+  );
 };
