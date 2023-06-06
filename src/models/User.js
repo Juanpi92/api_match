@@ -17,7 +17,7 @@ export const User = mongoose.model(
         type: String,
       },
     },
-    gender: { type: String, default: "heterosexual" },
+    gender: { type: String, default: "default" },
     phone: {
       type: String,
       default: "default value",
