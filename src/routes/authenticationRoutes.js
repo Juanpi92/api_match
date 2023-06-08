@@ -115,21 +115,6 @@ export const authenticationRoutes = (app) => {
             temporary.push({ url: temp, id: myuser.photos[index] });
           }
         }
-        /*
-        myuser.photos.forEach(async (photo) => {
-          if (photo !== "") {
-            let getObjectParams = {
-              Bucket: process.env.BUCKET_NAME,
-              Key: photo,
-            };
-            let command2 = new GetObjectCommand(getObjectParams);
-            let temp = await getSignedUrl(s3, command2, {
-              expiresIn: 10800,
-            });
-            temporary.push({ url: temp, id: photo });
-          }
-        });
-        */
       }
       myuser.photos = temporary;
       let token = jwt.sign(myuser, process.env.SECRET_TOKEN, {
@@ -224,9 +209,9 @@ export const authenticationRoutes = (app) => {
         ];
 
         //Sending the user and the token.
-        //res.setHeader("auth-token", JSON.stringify(token));
-        // res.status(201).send(myuser);
-        res.setHeader("Authorization", `Bearer ${token}`);
+        res.setHeader("auth-token", JSON.stringify(token));
+        res.status(201).send(myuser);
+
         res.status(201).send(myuser);
       } catch (error) {
         console.log(error);

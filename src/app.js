@@ -22,6 +22,12 @@ app.use(cors());
 mongoose.set("strictQuery", false);
 
 app.use(
+  cors({
+    exposedHeaders: ["auth-token"],
+  })
+);
+
+app.use(
   // Added to capture user email
   express.urlencoded({
     extended: true,
