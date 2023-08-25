@@ -27,4 +27,6 @@ Design das Wireframes (FIGMA): <a href="https://www.figma.com/file/vdgJqeTlBXJYX
 
 Repositório Principal API: <a href="https://github.com/Juanpi92/api_match">Clique aqui</a> 🟢
 
+Repositório Documentação API: <a href="https://github.com/elguesabal/documentacao_api">Clique aqui</a> 🟢
+
 Repositório Principal FRONT: <a href="https://github.com/plfmoura/match-app">Clique aqui</a> 🟢
